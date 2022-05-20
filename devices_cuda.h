@@ -103,6 +103,28 @@ namespace devices
   }
 
   template <typename T>
+  __global__ void curand_draw2(unsigned long long seed, T mean, T stdev, T* array, int array_size){
+    
+    auto i = threadIdx.x + blockIdx.x * blockDim.x;
+  
+    if(i < array_size){
+      curandState state;
+      curand_init(seed, i, 0, &state);
+      array[i] = mean + stdev * curand_normal_double(&state);
+    }
+  }
+
+    template <typename T>
+  __forceinline__ void random_array2(T mean, T stdev, T* array, int array_size){
+    const int blocksize = 64;
+    const int gridsize = (array_size - 1 + blocksize) / blocksize;
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<unsigned long long> dist(0, 1e10);
+    curand_draw2<<<gridsize, blocksize>>>(dist(mt), mean, stdev, array, array_size);
+  }
+
+  template <typename T>
   __forceinline__ void random_array(T mean, T stdev, T* array, int array_size){
     
     const int blocksize = 64;

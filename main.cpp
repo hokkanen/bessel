@@ -45,7 +45,7 @@ int main(){
     }
   );
 
-  devices::random_array(100.0, 15.0, rnd_val, ITERATIONS * POPULATION);
+  devices::random_array2(100.0, 15.0, rnd_val, ITERATIONS * POPULATION);
 
   devices::parallel_for(ITERATIONS, 
     DEVICE_LAMBDA(const int iter) {

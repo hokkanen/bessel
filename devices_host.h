@@ -47,15 +47,14 @@ namespace devices
   }
 
   template <typename T>
-  inline void random_array(T mean, T stdev, T* array, int array_size){
+  inline T random_double(unsigned long long seed, int idx, T mean, T stdev){
     
     std::random_device rd;
     std::mt19937 mt(rd());
     //std::uniform_real_distribution<double> dist(0,1);
     std::normal_distribution<double> dist(mean, stdev);
 
-    for(int i = 0; i < array_size; ++i){
-      array[i] = dist(mt);
-    }
+    (void)seed;
+    return dist(mt);
   }
 }

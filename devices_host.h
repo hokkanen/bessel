@@ -6,8 +6,9 @@
 
 namespace devices
 {
-  inline void init() {
+  inline void init(int node_rank) {
     // Nothing needs to be done here
+    (void) node_rank;
   }
 
   inline void finalize() {
@@ -47,14 +48,13 @@ namespace devices
   }
 
   template <typename T>
-  inline T random_double(unsigned long long seed, int idx, T mean, T stdev){
+  inline T random_double(unsigned long long seed, unsigned long long idx, T mean, T stdev){
     
     std::random_device rd;
     std::mt19937 mt(rd());
     //std::uniform_real_distribution<double> dist(0,1);
     std::normal_distribution<double> dist(mean, stdev);
 
-    (void)seed;
     return dist(mt);
   }
 }

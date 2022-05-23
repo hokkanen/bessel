@@ -3,12 +3,22 @@
 #include <curand_kernel.h>
 #include <random>
 
+#define CUDA_ERR(err) (cuda_error(err, __FILE__, __LINE__))
+static inline void cuda_error(cudaError_t err, const char *file, int line) {
+	if (err != cudaSuccess) {
+		printf("\n\n%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+		exit(1);
+	}
+}
+
 #define DEVICE_LAMBDA [=] __host__ __device__
 
 namespace devices
 {
-  __forceinline__ void init() {
-    cudaSetDevice(0);
+  __forceinline__ void init(int node_rank) {
+    int num_devices = 0;
+    CUDA_ERR(cudaGetDeviceCount(&num_devices));
+    CUDA_ERR(cudaSetDevice(node_rank % num_devices));
   }
 
   __forceinline__ void finalize() {
@@ -17,16 +27,16 @@ namespace devices
 
   __forceinline__ void* allocate(size_t bytes) {
     void* ptr;
-    cudaMallocManaged(&ptr, bytes);
+    CUDA_ERR(cudaMallocManaged(&ptr, bytes));
     return ptr;
   }
 
   __forceinline__ void free(void* ptr) {
-    cudaFree(ptr);
+    CUDA_ERR(cudaFree(ptr));
   }
 
   __forceinline__ void memcpy_d2d(void* dst, void* src, size_t bytes){
-    cudaMemcpy(dst, src, bytes, cudaMemcpyDeviceToDevice);
+    CUDA_ERR(cudaMemcpy(dst, src, bytes, cudaMemcpyDeviceToDevice));
   }
 
   template <typename LambdaBody> 
@@ -44,7 +54,7 @@ namespace devices
     const int blocksize = 64;
     const int gridsize = (loop_size - 1 + blocksize) / blocksize;
     cudaKernel<<<gridsize, blocksize>>>(loop_body, loop_size);
-    cudaStreamSynchronize(0);
+    CUDA_ERR(cudaStreamSynchronize(0));
   }
 
   template <typename Lambda, typename T>
@@ -53,8 +63,8 @@ namespace devices
     const int gridsize = (loop_size - 1 + blocksize) / blocksize;
 
     T* buf;
-    cudaMalloc(&buf, sizeof(T));
-    cudaMemcpy(buf, sum, sizeof(T), cudaMemcpyHostToDevice);
+    CUDA_ERR(cudaMalloc(&buf, sizeof(T)));
+    CUDA_ERR(cudaMemcpy(buf, sum, sizeof(T), cudaMemcpyHostToDevice));
 
     auto lambda_outer = 
       DEVICE_LAMBDA(const int i)
@@ -65,24 +75,24 @@ namespace devices
       };
 
     cudaKernel<<<gridsize, blocksize>>>(lambda_outer, loop_size);
-    cudaStreamSynchronize(0);
+    CUDA_ERR(cudaStreamSynchronize(0));
 
-    cudaMemcpy(sum, buf, sizeof(T), cudaMemcpyDeviceToHost);
-    cudaFree(buf);
+    CUDA_ERR(cudaMemcpy(sum, buf, sizeof(T), cudaMemcpyDeviceToHost));
+    CUDA_ERR(cudaFree(buf));
   }
 
   template <typename T>
   __host__ __device__ __forceinline__ static void atomic_add(T *array_loc, T value){
-      //Define this function depending on whether it runs on GPU or CPU
+    // Define this function depending on whether it runs on GPU or CPU
 #ifdef __CUDA_ARCH__
-      atomicAdd(array_loc, value);
+    atomicAdd(array_loc, value);
 #else
-      *array_loc += value;
+    *array_loc += value;
 #endif
   }
 
   template <typename T>
-  __host__ __device__ T random_double(unsigned long long seed, int idx, T mean, T stdev){    
+  __host__ __device__ T random_double(unsigned long long seed, unsigned long long idx, T mean, T stdev){    
     
     T var = 0;
 #ifdef __CUDA_ARCH__

@@ -20,35 +20,38 @@
   #include "devices_host.h"
 #endif
 
+#include "comms.h"
+
 #define N_BESSEL 12
 #define ITERATIONS 1000
 #define POPULATION 1000
-#define SAMPLE 10
+#define SAMPLE 100
 
 using namespace std;
 
-int main(){
+int main(int argc, char *argv []){
 
   // Set timer
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-  // Some device backends require an initialization
-  devices::init();
+  // Initialize processes and devices
+  comms::init_procs(&argc, &argv);
+  int my_rank = comms::get_rank();
 
   // Memory allocation
   double* b_error = (double*)devices::allocate(ITERATIONS * N_BESSEL * sizeof(double));
-  double* b_mean_error = (double*)devices::allocate(N_BESSEL * sizeof(double));
+  double* b_error_mean = (double*)devices::allocate(N_BESSEL * sizeof(double));
 
   // Generate a random seed value
   std::random_device rd;
   std::mt19937 mt(rd());
-  std::uniform_int_distribution<unsigned long long> dist(0, 1e9);
+  std::uniform_int_distribution<unsigned long long> dist(0, 1e10);
   unsigned long long seed = dist(mt);
 
   // Initialize the mean error array
   devices::parallel_for(N_BESSEL, 
     DEVICE_LAMBDA(const int j) {
-      b_mean_error[j] = 0.0;
+      b_error_mean[j] = 0.0;
     }
   );
 
@@ -61,10 +64,11 @@ int main(){
       double rnd_val[POPULATION];
       
       for(int i = 0; i < POPULATION; ++i){
-        rnd_val[i] = devices::random_double(iter * seed, i, 100.0, 15.0);
+        unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
+        rnd_val[i] = devices::random_double(seed, seq, 100.0, 15.0);
         p_mean += rnd_val[i];
         if(i < SAMPLE) s_mean += rnd_val[i];
-        if(iter == 0 && i < 3) printf("rnd_val[%d]: %.5f \n", i, rnd_val[i]);
+        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val[i]);
       }
       
       p_mean /= POPULATION;
@@ -101,28 +105,35 @@ int main(){
   devices::parallel_for(ITERATIONS, 
     DEVICE_LAMBDA(const int iter) {
       for(int j = 0; j < N_BESSEL; ++j){     
-        devices::atomic_add(&b_mean_error[j], b_error[N_BESSEL * iter + j]);
+        devices::atomic_add(&b_error_mean[j], b_error[N_BESSEL * iter + j]);
       }
     }
   );
 
+  // Each process sends its rank to reduction, root process collects the result
+  comms::reduce_procs(b_error_mean, N_BESSEL);
+
   // Divide the error sum to find the averaged error for each tested Bessel value
-  for(int j = 0; j < N_BESSEL; ++j){
-    b_mean_error[j] /= ITERATIONS;
-    double sub = j * (1.2 / N_BESSEL);
-    printf("Mean error for Bessel = %.2f is %.10f\n", sub, b_mean_error[j]);
+  if(my_rank == 0){
+    for(int j = 0; j < N_BESSEL; ++j){
+      b_error_mean[j] /= (comms::get_procs() * ITERATIONS);
+      double sub = j * (1.2 / N_BESSEL);
+      printf("Mean error for Bessel = %.2f is %.10f\n", sub, b_error_mean[j]);
+    }
   }
   
   // Memory deallocations
   devices::free((void*)b_error);
-  devices::free((void*)b_mean_error);
+  devices::free((void*)b_error_mean);
 
-  // Some devices backends require a finalization
-  devices::finalize();
+  // Finalize processes and devices
+  comms::finalize_procs();
 
   // Print timing
-  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-  std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
+  if(my_rank == 0){
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
+  }
 
   return 0;
 }

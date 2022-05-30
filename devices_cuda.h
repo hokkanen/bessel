@@ -97,7 +97,11 @@ namespace devices
     T var = 0;
 #ifdef __CUDA_ARCH__
     curandState state;
+
+    // curand_init() reproduces the same random number with the same seed and idx
     curand_init(seed, idx, 0, &state);
+
+    // curand_normal_double() gives a random double from a normal distribution with mean = 0 and stdev = 1
     var = stdev * curand_normal_double(&state);
 #endif
     return mean + var;

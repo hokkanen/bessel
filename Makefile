@@ -1,5 +1,5 @@
 CC = nvcc
-CCFLAGS = -D=HAVE_CUDA=1 --x cu --extended-lambda -gencode=arch=compute_70,code=sm_70
+CCFLAGS = -D=HAVE_CUDA --x cu --extended-lambda -gencode=arch=compute_70,code=sm_70
 MPICXX = mpicxx
 MPICXXFLAGS = -g -O2
 LD = $(CC)

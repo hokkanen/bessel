@@ -27,8 +27,6 @@
 #define POPULATION 1000
 #define SAMPLE 100
 
-using namespace std;
-
 int main(int argc, char *argv []){
 
   // Set timer
@@ -42,10 +40,16 @@ int main(int argc, char *argv []){
   double* b_error = (double*)devices::allocate(ITERATIONS * N_BESSEL * sizeof(double));
   double* b_error_mean = (double*)devices::allocate(N_BESSEL * sizeof(double));
 
-  // Generate a random seed value
+  // Use a non-deterministic random number generator for the master seed value
   std::random_device rd;
-  std::mt19937 mt(rd());
+
+  // Use 64 bit Mersenne Twister 19937 generator
+  std::mt19937_64 mt(rd());
+
+  // Get a random unsigned long long from a uniform int distribution
   std::uniform_int_distribution<unsigned long long> dist(0, 1e10);
+
+  // Get the non-deterministic random master seed value
   unsigned long long seed = dist(mt);
 
   // Initialize the mean error array
@@ -61,14 +65,13 @@ int main(int argc, char *argv []){
 
       double p_mean = 0.0;
       double s_mean = 0.0;
-      double rnd_val[POPULATION];
       
       for(int i = 0; i < POPULATION; ++i){
         unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-        rnd_val[i] = devices::random_double(seed, seq, 100.0, 15.0);
-        p_mean += rnd_val[i];
-        if(i < SAMPLE) s_mean += rnd_val[i];
-        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val[i]);
+        double rnd_val = devices::random_double(seed, seq, 100.0, 15.0);
+        p_mean += rnd_val;
+        if(i < SAMPLE) s_mean += rnd_val;
+        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val);
       }
       
       p_mean /= POPULATION;
@@ -79,12 +82,15 @@ int main(int argc, char *argv []){
       double p_stdev = 0.0;
       
       for(int i = 0; i < POPULATION; ++i){
-        double p_diff = rnd_val[i] - p_mean;
+        unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
+        double rnd_val = devices::random_double(seed, seq, 100.0, 15.0);
+        double p_diff = rnd_val - p_mean;
         p_stdev += p_diff * p_diff;
         if(i < SAMPLE){
-          double b_diff = rnd_val[i] - s_mean;
+          double b_diff = rnd_val - s_mean;
           b_sum += b_diff * b_diff;   
         }
+        //if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val);
       }
       p_stdev /= POPULATION;
       p_stdev = sqrt(p_stdev);

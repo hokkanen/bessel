@@ -50,8 +50,12 @@ namespace devices
   template <typename T>
   inline T random_double(unsigned long long seed, unsigned long long idx, T mean, T stdev){
     
-    std::random_device rd;
-    std::mt19937 mt(rd());
+    // Seed with std::seed_seq to reproduce the same random number with the same seed and idx (same as curand)
+    std::seed_seq seedseq{seed, idx};
+
+    // Use 64 bit Mersenne Twister 19937 generator
+    std::mt19937_64 mt(seedseq);
+
     //std::uniform_real_distribution<double> dist(0,1);
     std::normal_distribution<double> dist(mean, stdev);
 

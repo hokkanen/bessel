@@ -37,7 +37,6 @@ int main(int argc, char *argv []){
   int my_rank = comms::get_rank();
 
   // Memory allocation
-  double* b_error = (double*)devices::allocate(ITERATIONS * N_BESSEL * sizeof(double));
   double* b_error_mean = (double*)devices::allocate(N_BESSEL * sizeof(double));
 
   // Use a non-deterministic random number generator for the master seed value
@@ -101,18 +100,11 @@ int main(int argc, char *argv []){
         b_stdev[j] = b_sum / (SAMPLE - sub);
         b_stdev[j] = sqrt(b_stdev[j]);
         double diff = p_stdev - b_stdev[j];
-        b_error[N_BESSEL * iter + j] = sqrt(diff * diff);
-        //printf("b_stdev[%d]: %f, b_error[iter: %d][sub: %f]: %f\n", j, b_stdev[j], iter, sub, b_error[N_BESSEL * iter + j]);  
-      }     
-    }
-  );
+        //printf("b_stdev[%d]: %f, error[iter: %d][sub: %f]: %f\n", j, b_stdev[j], iter, sub, sqrt(diff * diff));  
 
-  // Sum the errors of each iteration
-  devices::parallel_for(ITERATIONS, 
-    DEVICE_LAMBDA(const int iter) {
-      for(int j = 0; j < N_BESSEL; ++j){     
-        devices::atomic_add(&b_error_mean[j], b_error[N_BESSEL * iter + j]);
-      }
+        // Sum the errors of each iteration
+        devices::atomic_add(&b_error_mean[j], sqrt(diff * diff));
+      }     
     }
   );
 
@@ -129,7 +121,6 @@ int main(int argc, char *argv []){
   }
   
   // Memory deallocations
-  devices::free((void*)b_error);
   devices::free((void*)b_error_mean);
 
   // Finalize processes and devices

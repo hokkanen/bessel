@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cstdlib>
 #include <random>
 #include <string.h>
@@ -8,11 +9,10 @@ namespace devices
 {
   inline void init(int node_rank) {
     // Nothing needs to be done here
-    (void) node_rank;
   }
 
-  inline void finalize() {
-    printf("Host finalized.\n");
+  inline void finalize(int rank) {
+    printf("Rank %d, Host finalized.\n", rank);
   }
 
   inline void* allocate(size_t bytes) {

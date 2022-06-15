@@ -1,7 +1,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
-#include <random>
 
 #define CUDA_ERR(err) (cuda_error(err, __FILE__, __LINE__))
 static inline void cuda_error(cudaError_t err, const char *file, int line) {
@@ -21,8 +20,8 @@ namespace devices
     CUDA_ERR(cudaSetDevice(node_rank % num_devices));
   }
 
-  __forceinline__ void finalize() {
-    printf("CUDA finalized.\n");
+  __forceinline__ void finalize(int rank) {
+    printf("Rank %d, CUDA finalized.\n", rank);
   }
 
   __forceinline__ void* allocate(size_t bytes) {

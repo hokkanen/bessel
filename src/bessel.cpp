@@ -10,16 +10,7 @@
 #include <random>
 #include <stdio.h>
 
-#if defined(HAVE_CUDA)
-  #include "devices_cuda.h"
-#elif defined(HAVE_HIP)
-  #include "devices_hip.h"
-#elif defined(HAVE_KOKKOS)
-  #include "devices_kokkos.h"
-#else
-  #include "devices_host.h"
-#endif
-
+// Namespaces "comms" and "devices" declared here
 #include "comms.h"
 
 #define N_BESSEL 12

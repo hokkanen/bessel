@@ -1,8 +1,10 @@
-#include "mpi.h"
+#include "comms.h"
 
-namespace comms
-{
-  int MPI_INITIALIZED = 0;
+#if defined(HAVE_MPI)
+
+namespace comms{
+
+  static int MPI_INITIALIZED = 0;
   
   int get_procs(){
     int comm_size = 1;
@@ -56,8 +58,14 @@ namespace comms
       }
     }
   }
+
+  void barrier_procs(){
+    // Synchronize across all MPI processes
+    if (MPI_INITIALIZED == 1) 
+      MPI_Barrier(MPI_COMM_WORLD);
+  }
   
-  void init_procs(int *argc, char **argv[]){
+  void init_procs(int *argc, char **argv[]){   
     if(*argc > 1){
       MPI_Init(argc, argv);
       MPI_INITIALIZED = 1;
@@ -67,11 +75,53 @@ namespace comms
   }
   
   void finalize_procs(){
+    // Some device backends also require a finalization
+    devices::finalize(get_rank());
+
     // Finalize MPI if it is used
     if (MPI_INITIALIZED == 1) 
       MPI_Finalize();
-  
-    // Some device backends also require a finalization
-    devices::finalize();
   }
 }
+
+#else
+
+namespace comms{
+  int get_procs(){
+    int comm_size = 1;
+    return comm_size;
+  }
+  
+  int get_rank(){
+    int proc_rank = 0;
+    return proc_rank;
+  }
+  
+  int get_node_rank(){
+    int node_rank = 0;
+    return node_rank;
+  }
+  
+  int get_node_procs(){
+    int node_comm_size = 1;
+    return node_comm_size;
+  }
+  
+  void reduce_procs(double *sbuf, int count){
+  }
+
+  void barrier_procs(){
+  }
+  
+  void init_procs(int *argc, char **argv[]){
+    // Some device backends require an initialization
+    devices::init(get_node_rank());
+  }
+  
+  void finalize_procs(){
+    // Some device backends also require a finalization
+    devices::finalize(get_rank());
+  }
+}
+
+#endif

@@ -1,5 +1,5 @@
 #include <hip/hip_runtime.h>
-#include <hip/hiprand.hpp>
+#include <hiprand_kernel.h>
 
 #define HIP_ERR(err) (hip_error(err, __FILE__, __LINE__))
 static inline void hip_error(hipError_t err, const char *file, int line) {
@@ -82,7 +82,7 @@ namespace devices
   template <typename T>
   __host__ __device__ __forceinline__ static void atomic_add(T *array_loc, T value){
     // Define this function depending on whether it runs on GPU or CPU
-#ifdef __HIP_ARCH__
+#if __HIP_DEVICE_COMPILE__
     atomicAdd(array_loc, value);
 #else
     *array_loc += value;
@@ -93,7 +93,7 @@ namespace devices
   __host__ __device__ T random_double(unsigned long long seed, unsigned long long idx, T mean, T stdev){    
     
     T var = 0;
-#ifdef __HIP_ARCH__
+#if __HIP_DEVICE_COMPILE__
     hiprandState state;
 
     // hiprand_init() reproduces the same random number with the same seed and idx

@@ -11,7 +11,7 @@ EXE = bessel
 else ifeq ($(HIP),CUDA)
 
 CXX = hipcc
-CXXDEFS = -DHAVE_HIP
+CXXDEFS = -DHAVE_HIP -I/appl/opt/rocm/rocm-4.0.0/hiprand/include/
 CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70
 # CXXFLAGS = -g -O3 -Xcompiler -fno-tree-vectorize -Xcompiler -fopt-info-loop --x=cu --extended-lambda
 EXE = bessel

@@ -44,14 +44,14 @@ int comms_get_node_procs(){
   return node_comm_size;
 }
 
-void comms_reduce_procs(double *sbuf, int count){
+void comms_reduce_procs(float *sbuf, int count){
   if (MPI_INITIALIZED == 1){
-    double* rbuf;
+    float* rbuf;
     if(comms_get_rank() == 0)
-      rbuf = (double*)malloc(count * sizeof(double));
-    MPI_Reduce(sbuf, rbuf, count, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+      rbuf = (float*)malloc(count * sizeof(float));
+    MPI_Reduce(sbuf, rbuf, count, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
     if(comms_get_rank() == 0){
-      memcpy(sbuf, rbuf, count * sizeof(double));
+      memcpy(sbuf, rbuf, count * sizeof(float));
       free((void*)rbuf);
     }
   }
@@ -102,7 +102,7 @@ int comms_get_node_procs(){
   return node_comm_size;
 }
 
-void comms_reduce_procs(double *sbuf, int count){
+void comms_reduce_procs(float *sbuf, int count){
 }
 
 void comms_barrier_procs(){

@@ -51,17 +51,17 @@ extern "C"{
     }
   
     template <typename T>
-    __host__ __device__ static T devices_random_double(unsigned long long seed, unsigned long long idx, T mean, T stdev){    
+    __host__ __device__ static T devices_random_float(unsigned long long seed, unsigned long long idx, T mean, T stdev){    
       
       T var = 0;
   #ifdef __CUDA_ARCH__
-      curandState state;
+      curandStatePhilox4_32_10_t state;
   
       // curand_init() reproduces the same random number with the same seed and idx
       curand_init(seed, idx, 0, &state);
   
-      // curand_normal_double() gives a random double from a normal distribution with mean = 0 and stdev = 1
-      var = stdev * curand_normal_double(&state) + mean;
+      // curand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1
+      var = stdev * curand_normal(&state) + mean;
   #endif
       return var;
     }

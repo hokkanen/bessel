@@ -25,22 +25,22 @@ inline static void devices_memcpy_d2d(void* dst, void* src, size_t bytes){
   memcpy(dst, src, bytes);
 }
 
-inline static void devices_atomic_add(double *array_loc, double value){
+inline static void devices_atomic_add(float *array_loc, float value){
   *array_loc += value;
 }
 
-inline static double devices_random_double(unsigned long long seed, unsigned long long idx, double mean, double stdev){
+inline static float devices_random_float(unsigned long long seed, unsigned long long idx, float mean, float stdev){
   
-  // Use Box Muller algorithm to get a double from a normal distribution
-  const double two_pi = 2.0 * M_PI;
-	double u1 = (double) rand() / RAND_MAX;
-	double u2 = (double) rand() / RAND_MAX;
-	double factor = stdev * sqrt ( -2 * log (u1) );
-	double trig_arg = two_pi * u2;
+  // Use Box Muller algorithm to get a float from a normal distribution
+  const float two_pi = 2.0f * M_PI;
+	float u1 = (float) rand() / RAND_MAX;
+	float u2 = (float) rand() / RAND_MAX;
+	float factor = stdev * sqrtf (-2.0f * logf (u1));
+	float trig_arg = two_pi * u2;
 	
-  // Box Muller algorithm produces two random normally distributed doubles, z0 and z1
-  double z0 = factor * cos (trig_arg) + mean; // Need only one
-	// double z1 = factor * sin (trig_arg) + mean; 
+  // Box Muller algorithm produces two random normally distributed floats, z0 and z1
+  float z0 = factor * cosf (trig_arg) + mean; // Need only one
+	// float z1 = factor * sinf (trig_arg) + mean; 
   return z0;
 }
 

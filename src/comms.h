@@ -18,5 +18,5 @@ namespace comms{
   void barrier_procs();
   void finalize_procs();
   void init_procs(int *argc, char **argv[]);
-  void reduce_procs(double *sbuf, int count);
+  void reduce_procs(float *sbuf, int count);
 }

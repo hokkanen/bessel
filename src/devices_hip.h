@@ -2,7 +2,7 @@
 #include <hiprand_kernel.h>
 
 #define HIP_ERR(err) (hip_error(err, __FILE__, __LINE__))
-static inline void hip_error(hipError_t err, const char *file, int line) {
+inline static void hip_error(hipError_t err, const char *file, int line) {
 	if (err != hipSuccess) {
 		printf("\n\n%s in %s at line %d\n", hipGetErrorString(err), file, line);
 		exit(1);
@@ -13,27 +13,27 @@ static inline void hip_error(hipError_t err, const char *file, int line) {
 
 namespace devices
 {
-  __forceinline__ void init(int node_rank) {
+  __forceinline__ static void init(int node_rank) {
     int num_devices = 0;
     HIP_ERR(hipGetDeviceCount(&num_devices));
     HIP_ERR(hipSetDevice(node_rank % num_devices));
   }
 
-  __forceinline__ void finalize(int rank) {
+  __forceinline__ static void finalize(int rank) {
     printf("Rank %d, HIP finalized.\n", rank);
   }
 
-  __forceinline__ void* allocate(size_t bytes) {
+  __forceinline__ static void* allocate(size_t bytes) {
     void* ptr;
     HIP_ERR(hipMallocManaged(&ptr, bytes));
     return ptr;
   }
 
-  __forceinline__ void free(void* ptr) {
+  __forceinline__ static void free(void* ptr) {
     HIP_ERR(hipFree(ptr));
   }
 
-  __forceinline__ void memcpyd2d(void* dst, void* src, size_t bytes){
+  __forceinline__ static void memcpyd2d(void* dst, void* src, size_t bytes){
     HIP_ERR(hipMemcpy(dst, src, bytes, hipMemcpyDeviceToDevice));
   }
 
@@ -48,7 +48,7 @@ namespace devices
   }
 
   template <typename T>
-  __forceinline__ void parallel_for(int loop_size, T loop_body) {
+  __forceinline__ static void parallel_for(int loop_size, T loop_body) {
     const int blocksize = 64;
     const int gridsize = (loop_size - 1 + blocksize) / blocksize;
     hipKernel<<<gridsize, blocksize>>>(loop_body, loop_size);
@@ -56,7 +56,7 @@ namespace devices
   }
 
   template <typename Lambda, typename T>
-  __forceinline__ void parallel_reduce(const int loop_size, Lambda loop_body, T *sum) {
+  __forceinline__ static void parallel_reduce(const int loop_size, Lambda loop_body, T *sum) {
     const int blocksize = 64;
     const int gridsize = (loop_size - 1 + blocksize) / blocksize;
 
@@ -90,18 +90,18 @@ namespace devices
   }
 
   template <typename T>
-  __host__ __device__ T random_double(unsigned long long seed, unsigned long long idx, T mean, T stdev){    
+  __host__ __device__ static T random_float(unsigned long long seed, unsigned long long idx, T mean, T stdev){    
     
     T var = 0;
 #if __HIP_DEVICE_COMPILE__
-    hiprandState state;
+    hiprandStatePhilox4_32_10_t state;
 
     // hiprand_init() reproduces the same random number with the same seed and idx
     hiprand_init(seed, idx, 0, &state);
 
-    // hiprand_normal_double() gives a random double from a normal distribution with mean = 0 and stdev = 1
-    var = stdev * hiprand_normal_double(&state);
+    // hiprand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1
+    var = stdev * hiprand_normal(&state) + mean;
 #endif
-    return mean + var;
+    return var;
   }
 }

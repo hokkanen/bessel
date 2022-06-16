@@ -15,8 +15,8 @@
 #include "comms.h"
 
 #define N_BESSEL 12
-#define ITERATIONS 100000
-#define POPULATION 10000
+#define ITERATIONS 1000
+#define POPULATION 1000
 #define SAMPLE 50
 
 int main(int argc, char *argv []){
@@ -56,14 +56,13 @@ int main(int argc, char *argv []){
 
       float p_mean = 0.0f;
       float s_mean = 0.0f;
-      float rnd_val[POPULATION];
       
       for(int i = 0; i < POPULATION; ++i){
         unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-        rnd_val[i] = devices::random_float(seed, seq, 100.0f, 15.0f);
-        p_mean += rnd_val[i];
-        if(i < SAMPLE) s_mean += rnd_val[i];
-        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val[i]);
+        float rnd_val = devices::random_float(seed, seq, 100.0f, 15.0f);
+        p_mean += rnd_val;
+        if(i < SAMPLE) s_mean += rnd_val;
+        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val);
       }
       
       p_mean /= POPULATION;
@@ -74,13 +73,15 @@ int main(int argc, char *argv []){
       float p_stdev = 0.0f;
       
       for(int i = 0; i < POPULATION; ++i){
-        float p_diff = rnd_val[i] - p_mean;
+        unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
+        float rnd_val = devices::random_float(seed, seq, 100.0f, 15.0f);
+        float p_diff = rnd_val - p_mean;
         p_stdev += p_diff * p_diff;
         if(i < SAMPLE){
-          float b_diff = rnd_val[i] - s_mean;
+          float b_diff = rnd_val - s_mean;
           b_sum += b_diff * b_diff;   
         }
-        //if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val[i]);
+        //if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val);
       }
       p_stdev /= POPULATION;
       p_stdev = sqrtf(p_stdev);

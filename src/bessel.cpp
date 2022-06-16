@@ -56,13 +56,14 @@ int main(int argc, char *argv []){
 
       double p_mean = 0.0;
       double s_mean = 0.0;
+      double rnd_val[POPULATION];
       
       for(int i = 0; i < POPULATION; ++i){
         unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-        double rnd_val = devices::random_double(seed, seq, 100.0, 15.0);
-        p_mean += rnd_val;
-        if(i < SAMPLE) s_mean += rnd_val;
-        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val);
+        rnd_val[i] = devices::random_double(seed, seq, 100.0, 15.0);
+        p_mean += rnd_val[i];
+        if(i < SAMPLE) s_mean += rnd_val[i];
+        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val[i]);
       }
       
       p_mean /= POPULATION;
@@ -73,15 +74,13 @@ int main(int argc, char *argv []){
       double p_stdev = 0.0;
       
       for(int i = 0; i < POPULATION; ++i){
-        unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-        double rnd_val = devices::random_double(seed, seq, 100.0, 15.0);
-        double p_diff = rnd_val - p_mean;
+        double p_diff = rnd_val[i] - p_mean;
         p_stdev += p_diff * p_diff;
         if(i < SAMPLE){
-          double b_diff = rnd_val - s_mean;
+          double b_diff = rnd_val[i] - s_mean;
           b_sum += b_diff * b_diff;   
         }
-        //if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val);
+        //if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val[i]);
       }
       p_stdev /= POPULATION;
       p_stdev = sqrt(p_stdev);

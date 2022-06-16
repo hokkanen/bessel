@@ -29,7 +29,6 @@ namespace devices
 
   template <typename Lambda>
   inline void parallel_for(int loop_size, Lambda loop_body) {
-    #pragma parallel for  
     for(int i = 0; i < loop_size; i++){
       loop_body(i);
     }

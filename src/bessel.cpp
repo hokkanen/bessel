@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <climits>
 #include <random>
 #include <stdio.h>
 
@@ -36,8 +37,8 @@ int main(int argc, char *argv []){
   // Use 64 bit Mersenne Twister 19937 generator
   std::mt19937_64 mt(rd());
 
-  // Get a random unsigned long long from a uniform int distribution
-  std::uniform_int_distribution<unsigned long long> dist(0, 1e10);
+  // Get a random unsigned long long from a uniform integer distribution (seed_seq requires 32b int)
+  std::uniform_int_distribution<unsigned long long> dist(0, INT_MAX);
 
   // Get the non-deterministic random master seed value
   unsigned long long seed = dist(mt);

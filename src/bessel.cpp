@@ -37,8 +37,8 @@ int main(int argc, char *argv []){
   // Use 64 bit Mersenne Twister 19937 generator
   std::mt19937_64 mt(rd());
 
-  // Get a random unsigned long long from a uniform integer distribution (srand requires 32b int)
-  std::uniform_int_distribution<unsigned long long> dist(0, INT_MAX);
+  // Get a random unsigned long long from a uniform integer distribution (srand requires 32b uint)
+  std::uniform_int_distribution<unsigned long long> dist(0, UINT_MAX);
 
   // Get the non-deterministic random master seed value
   unsigned long long seed = dist(mt);

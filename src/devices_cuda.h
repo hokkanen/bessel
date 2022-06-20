@@ -57,7 +57,7 @@ extern "C"{
   #ifdef __CUDA_ARCH__
       curandStatePhilox4_32_10_t state;
   
-      // curand_init() reproduces the same random number with the same seed and idx
+      // curand_init() reproduces the same random number with the same seed and seq
       curand_init(seed, seq, 0, &state);
   
       // curand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1

@@ -24,13 +24,19 @@ int main(int argc, char *argv []){
 
   // Initialize processes and devices
   comms_init_procs(&argc, &argv);
-  int my_rank = comms_get_rank();
+  unsigned int my_rank = comms_get_rank();
 
   // Memory allocation
   float* b_error_mean = (float*)devices_allocate(N_BESSEL * sizeof(float));
 
-  // Get the random master seed value
-  srand(my_rank + time(0));
+  // Get the time value for the seed (only the value from the root rank is used)
+  int timeval = (int)time(0);
+
+  // Broadcast root rank time value to all ranks
+  comms_bcast(&timeval, 1, 0);
+
+  // Get the random master seed value (rank + root rank time value gives a unique seed)
+  srand(my_rank + (unsigned int)timeval);
   unsigned long long seed = (unsigned long long)rand();
 
   // Initialize the mean error array
@@ -49,10 +55,10 @@ int main(int argc, char *argv []){
     
     for(int i = 0; i < POPULATION; ++i){
       unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-      float rnd_val = devices_random_float(seed, seq, 100.0f, 15.0f);
+      float rnd_val = devices_random_float(seed, seq, i, 100.0f, 15.0f);
       p_mean += rnd_val;
       if(i < SAMPLE) s_mean += rnd_val;
-      if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val);
+      if(iter == 0 && i < 3) printf("Rank %u, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val);
     }
     
     p_mean /= POPULATION;
@@ -64,14 +70,14 @@ int main(int argc, char *argv []){
     
     for(int i = 0; i < POPULATION; ++i){
       unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-      float rnd_val = devices_random_float(seed, seq, 100.0f, 15.0f);
+      float rnd_val = devices_random_float(seed, seq, i, 100.0f, 15.0f);
       float p_diff = rnd_val - p_mean;
       p_stdev += p_diff * p_diff;
       if(i < SAMPLE){
         float b_diff = rnd_val - s_mean;
         b_sum += b_diff * b_diff;   
       }
-      //if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val);
+      //if(iter == 0 && i < 3) printf("Rank %u, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val);
     }
     p_stdev /= POPULATION;
     p_stdev = sqrtf(p_stdev);

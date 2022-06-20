@@ -29,8 +29,14 @@ inline static void devices_atomic_add(float *array_loc, float value){
   *array_loc += value;
 }
 
-inline static float devices_random_float(unsigned long long seed, unsigned long long idx, float mean, float stdev){
+inline static float devices_random_float(unsigned long long seed, unsigned long long seq, int idx, float mean, float stdev){
   
+  // Re-seed the first case
+  if(idx == 0){
+    // Overflow is defined behavior with unsigned, and therefore ok here
+    srand((unsigned int)seed + (unsigned int)seq);
+  }
+
   // Use Box Muller algorithm to get a float from a normal distribution
   const float two_pi = 2.0f * M_PI;
 	float u1 = (float) rand() / RAND_MAX;

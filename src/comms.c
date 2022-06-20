@@ -44,6 +44,17 @@ int comms_get_node_procs(){
   return node_comm_size;
 }
 
+void comms_barrier_procs(){
+  // Synchronize across all MPI processes
+  if (MPI_INITIALIZED == 1) 
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void comms_bcast(int *buf, int count, int root){
+  if (MPI_INITIALIZED == 1)
+    MPI_Bcast(&buf, count, MPI_INT, root, MPI_COMM_WORLD);
+}
+
 void comms_reduce_procs(float *sbuf, int count){
   if (MPI_INITIALIZED == 1){
     float* rbuf;
@@ -55,12 +66,6 @@ void comms_reduce_procs(float *sbuf, int count){
       free((void*)rbuf);
     }
   }
-}
-
-void comms_barrier_procs(){
-  // Synchronize across all MPI processes
-  if (MPI_INITIALIZED == 1) 
-    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void comms_init_procs(int *argc, char **argv[]){   
@@ -102,10 +107,13 @@ int comms_get_node_procs(){
   return node_comm_size;
 }
 
-void comms_reduce_procs(float *sbuf, int count){
+void comms_barrier_procs(){
 }
 
-void comms_barrier_procs(){
+void comms_bcast(int *buf, int count, int root){
+}
+
+void comms_reduce_procs(float *sbuf, int count){
 }
 
 void comms_init_procs(int *argc, char **argv[]){

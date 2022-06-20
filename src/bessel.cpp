@@ -15,8 +15,8 @@
 #include "comms.h"
 
 #define N_BESSEL 12
-#define ITERATIONS 1000
-#define POPULATION 1000
+#define ITERATIONS 10000
+#define POPULATION 10000
 #define SAMPLE 50
 
 int main(int argc, char *argv []){
@@ -26,7 +26,7 @@ int main(int argc, char *argv []){
 
   // Initialize processes and devices
   comms::init_procs(&argc, &argv);
-  int my_rank = comms::get_rank();
+  unsigned int my_rank = comms::get_rank();
 
   // Memory allocation
   float* b_error_mean = (float*)devices::allocate(N_BESSEL * sizeof(float));
@@ -37,7 +37,7 @@ int main(int argc, char *argv []){
   // Use 64 bit Mersenne Twister 19937 generator
   std::mt19937_64 mt(rd());
 
-  // Get a random unsigned long long from a uniform integer distribution (seed_seq requires 32b int)
+  // Get a random unsigned long long from a uniform integer distribution (srand requires 32b int)
   std::uniform_int_distribution<unsigned long long> dist(0, INT_MAX);
 
   // Get the non-deterministic random master seed value
@@ -59,10 +59,10 @@ int main(int argc, char *argv []){
       
       for(int i = 0; i < POPULATION; ++i){
         unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-        float rnd_val = devices::random_float(seed, seq, 100.0f, 15.0f);
+        float rnd_val = devices::random_float(seed, seq, i, 100.0f, 15.0f);
         p_mean += rnd_val;
         if(i < SAMPLE) s_mean += rnd_val;
-        if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val);
+        if(iter == 0 && i < 3) printf("Rank %u, rnd_val[%d]: %.5f \n", my_rank, i, rnd_val);
       }
       
       p_mean /= POPULATION;
@@ -74,14 +74,14 @@ int main(int argc, char *argv []){
       
       for(int i = 0; i < POPULATION; ++i){
         unsigned long long seq = ((unsigned long long)iter * (unsigned long long)POPULATION) + (unsigned long long)i;
-        float rnd_val = devices::random_float(seed, seq, 100.0f, 15.0f);
+        float rnd_val = devices::random_float(seed, seq, i, 100.0f, 15.0f);
         float p_diff = rnd_val - p_mean;
         p_stdev += p_diff * p_diff;
         if(i < SAMPLE){
           float b_diff = rnd_val - s_mean;
           b_sum += b_diff * b_diff;   
         }
-        //if(iter == 0 && i < 3) printf("Rank %d, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val);
+        //if(iter == 0 && i < 3) printf("Rank %u, rnd_val[%d]: %.5f? \n", my_rank, i, rnd_val);
       }
       p_stdev /= POPULATION;
       p_stdev = sqrtf(p_stdev);

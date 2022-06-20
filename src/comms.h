@@ -15,8 +15,11 @@ namespace comms{
   int get_rank();
   int get_node_procs();
   int get_node_rank();
+
   void barrier_procs();
-  void finalize_procs();
-  void init_procs(int *argc, char **argv[]);
   void reduce_procs(float *sbuf, int count);
+  
+  void init_procs(int *argc, char **argv[]);
+  void finalize_procs();
+  
 }

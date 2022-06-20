@@ -47,17 +47,24 @@ namespace devices
   }
 
   template <typename T>
-  inline static T random_float(unsigned long long seed, unsigned long long idx, T mean, T stdev){
+  inline static T random_float(unsigned long long seed, unsigned long long seq, int idx, T mean, T stdev){
     
-    // Seed with std::seed_seq to reproduce the same random number with the same seed and idx (same as curand)
-    std::seed_seq seedseq{seed, idx};
-
-    // Use 64 bit Mersenne Twister 19937 generator
-    std::mt19937 mt(seedseq);
-
-    //std::uniform_real_distribution<float> dist(0,1);
-    std::normal_distribution<float> dist(mean, stdev);
-
-    return dist(mt);
+    // Re-seed the first case
+    if(idx == 0){
+      // Overflow is defined behavior with unsigned, and therefore ok here
+      srand((unsigned int)seed + (unsigned int)seq);
+    }
+  
+    // Use Box Muller algorithm to get a float from a normal distribution
+    const float two_pi = 2.0f * M_PI;
+	  float u1 = (float) rand() / RAND_MAX;
+	  float u2 = (float) rand() / RAND_MAX;
+	  float factor = stdev * sqrtf (-2.0f * logf (u1));
+	  float trig_arg = two_pi * u2;
+	  
+    // Box Muller algorithm produces two random normally distributed floats, z0 and z1
+    float z0 = factor * cosf (trig_arg) + mean; // Need only one
+	  // float z1 = factor * sinf (trig_arg) + mean; 
+    return z0;
   }
 }

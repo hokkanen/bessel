@@ -91,14 +91,14 @@ namespace devices
   }
 
   template <typename T>
-  __host__ __device__ static T random_float(unsigned long long seed, unsigned long long idx, T mean, T stdev){    
+  __host__ __device__ static T random_float(unsigned long long seed, unsigned long long seq, int idx, T mean, T stdev){    
     
     T var = 0;
 #ifdef __CUDA_ARCH__
     curandStatePhilox4_32_10_t state;
 
     // curand_init() reproduces the same random number with the same seed and idx
-    curand_init(seed, idx, 0, &state);
+    curand_init(seed, seq, 0, &state);
 
     // curand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1
     var = stdev * curand_normal(&state) + mean;

@@ -96,7 +96,7 @@ namespace devices
 #if __HIP_DEVICE_COMPILE__
     hiprandStatePhilox4_32_10_t state;
 
-    // hiprand_init() reproduces the same random number with the same seed and idx
+    // hiprand_init() reproduces the same random number with the same seed and seq
     hiprand_init(seed, seq, 0, &state);
 
     // hiprand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1

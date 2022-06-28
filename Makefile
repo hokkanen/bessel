@@ -36,9 +36,9 @@ endif
 ifeq ($(MATPLOT),1)
 
 CXXDEFS += -DHAVE_MATPLOT
-CXXFLAGS += -std=gnu++17
-LDFLAGS += -L/usr/local/lib/Matplot++/
-LIBS += -lmatplot -lnodesoup
+CXXFLAGS += -std=c++17 -I/projappl/project_2002078/jarohokk/matplot/include/
+LDFLAGS += -L/projappl/project_2002078/jarohokk/matplot/lib64/ -L/projappl/project_2002078/jarohokk/matplot/lib64/Matplot++/
+LIBS += -lmatplot -ljpeg -ltiff -lz -lpng -lnodesoup
 
 endif
 

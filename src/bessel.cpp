@@ -116,9 +116,9 @@ int main(int argc, char *argv []){
 
 #ifdef HAVE_MATPLOT
   // Define vectors for matplot  
-  std::vector<double> x;
-  std::vector<double> y1;
-  std::vector<double> y2;
+  std::vector<float> x;
+  std::vector<float> y1;
+  std::vector<float> y2;
 #endif
 
   // Divide the error sums to find the averaged errors for each tested beta value
@@ -126,13 +126,15 @@ int main(int argc, char *argv []){
     for(int j = 0; j < n_beta; ++j){
       mse_stdev[j] /= (comms::get_procs() * N_ITER);
       mse_var[j] /= (comms::get_procs() * N_ITER);
+      float rmse_stdev = sqrtf(mse_stdev[j]);
+      float rmse_var = sqrtf(mse_var[j]);
       float sub = j * (range_beta / n_beta) - range_beta / 2.0f;
-      printf("Beta = %.2f: MSE for stdev = %.5f and var = %.5f\n", sub, mse_stdev[j], mse_var[j]);
+      printf("Beta = %.2f: RMSE for stdev = %.5f and var = %.5f\n", sub, rmse_stdev, rmse_var);
 #ifdef HAVE_MATPLOT     
       // Add data for matplot 
       x.push_back(sub);
-      y1.push_back(mse_stdev[j]);
-      y2.push_back(mse_var[j]);
+      y1.push_back(rmse_stdev);
+      y2.push_back(rmse_var);
 #endif
     }
   }
@@ -166,9 +168,9 @@ int main(int argc, char *argv []){
   l->location(matplot::legend::general_alignment::topright);
   
   // Set labels and style
-  matplot::title("Mean squared error (MSE) for Bessel's correction");
+  matplot::title("Root mean squared error (RMSE) for Bessel's correction");
   matplot::xlabel("Beta");
-  matplot::ylabel("MSE");
+  matplot::ylabel("RMSE");
   matplot::grid(matplot::on);
 
   // Show plot

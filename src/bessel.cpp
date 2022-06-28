@@ -27,7 +27,7 @@ int main(int argc, char *argv []){
 
   // Initialize processes and devices
   comms::init_procs(&argc, &argv);
-  unsigned int my_rank = comms::get_rank();
+  const unsigned int my_rank = comms::get_rank();
 
   // Set spacing and range for beta
   const unsigned int n_beta = 40;

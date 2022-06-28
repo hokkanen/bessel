@@ -32,13 +32,23 @@ EXE = bessel
 
 endif
 
+# Plot results with Matplot
+ifeq ($(MATPLOT),1)
+
+CXXDEFS += -DHAVE_MATPLOT
+CXXFLAGS += -std=gnu++17
+LDFLAGS += -L/usr/local/lib/Matplot++/
+LIBS += -lmatplot -lnodesoup
+
+endif
+
 # Message passing protocol
 ifeq ($(MPI),1)
 
 MPICXX = mpicxx
 MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
-LDFLAGS = -L/appl/spack/install-tree/gcc-9.1.0/openmpi-4.1.1-vonyow/lib
-LIBS = -lmpi
+LDFLAGS += -L/appl/spack/install-tree/gcc-9.1.0/openmpi-4.1.1-vonyow/lib
+LIBS += -lmpi
 
 else
 

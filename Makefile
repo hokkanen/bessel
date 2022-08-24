@@ -13,16 +13,15 @@ else ifeq ($(HIP),CUDA)
 
 CXX = hipcc
 CXXDEFS = -DHAVE_HIP -I/appl/opt/rocm/rocm-4.0.0/hiprand/include/
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70
-# CXXFLAGS = -g -O3 -Xcompiler -fno-tree-vectorize -Xcompiler -fopt-info-loop --x=cu --extended-lambda
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 --extended-lambda -gencode=arch=compute_80,code=sm_80
 FILETYPE = .cpp
 EXE = bessel
 
 else ifeq ($(HIP),ROCM)
 
 CXX = hipcc
-CXXDEFS = -DHAVE_HIP
-CXXFLAGS = -g -O3
+CXXDEFS = -DHAVE_HIP -I/appl/eap/opt/rocm-4.3.1/hiprand/include/ -I/appl/eap/opt/rocm-4.3.1/rocrand/include/
+CXXFLAGS = -g -O3 --offload-arch=gfx90a
 FILETYPE = .cpp
 EXE = bessel
 
@@ -30,9 +29,19 @@ else
 
 CXX = nvcc
 CXXDEFS = -DHAVE_CUDA
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 --extended-lambda -gencode=arch=compute_80,code=sm_80
 FILETYPE = .c
 EXE = bessel
+
+endif
+
+# Memory manager
+ifeq ($(UMPIRE),1)
+
+CXXDEFS += -DHAVE_UMPIRE
+CXXFLAGS += -I$(shell pwd)/umpire/include/
+LDFLAGS += -L$(shell pwd)/umpire/lib/
+LIBS += -lcamp -lumpire
 
 endif
 
@@ -41,14 +50,14 @@ ifeq ($(MPI),1)
 
 MPICXX = mpicxx
 MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
-LDFLAGS = -L/appl/spack/install-tree/gcc-9.1.0/openmpi-4.1.1-vonyow/lib
-LIBS = -lmpi -lm
+LDFLAGS += -L/appl/spack/install-tree/gcc-9.1.0/openmpi-4.1.1-vonyow/lib
+LIBS += -lmpi -lm
 
 else
 
 MPICXX = $(CXX)
 MPICXXFLAGS = $(CXXDEFS) $(CXXFLAGS)
-LIBS = -lm
+LIBS += -lm
 
 endif
 

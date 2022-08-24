@@ -1,5 +1,6 @@
 #include <hip/hip_runtime.h>
 #include <hiprand_kernel.h>
+#include "umpire/interface/c_fortran/umpire.h"
 
 // All macros and functions require a C++ compiler (HIP API does not support C)
 #define HIP_ERR(err) (hip_error(err, __FILE__, __LINE__))
@@ -14,6 +15,14 @@ inline static void hip_error(hipError_t err, const char *file, int line) {
     int num_devices = 0;
     HIP_ERR(hipGetDeviceCount(&num_devices));
     HIP_ERR(hipSetDevice(node_rank % num_devices));
+#if defined(HAVE_UMPIRE)
+    umpire_resourcemanager rm;
+    umpire_resourcemanager_get_instance(&rm);
+    umpire_allocator allocator;
+    umpire_resourcemanager_get_allocator_by_name(&rm, "UM", &allocator);
+    umpire_allocator pool;
+    umpire_resourcemanager_make_allocator_quick_pool(&rm, "pool", allocator, 1024, 1024, &pool);
+#endif
   }
 
   __forceinline__ static void devices_finalize(int rank) {
@@ -22,12 +31,28 @@ inline static void hip_error(hipError_t err, const char *file, int line) {
 
   __forceinline__ static void* devices_allocate(size_t bytes) {
     void* ptr;
+#if defined(HAVE_UMPIRE)
+    umpire_resourcemanager rm;
+    umpire_resourcemanager_get_instance(&rm);
+    umpire_allocator pool;
+    umpire_resourcemanager_get_allocator_by_name(&rm, "pool", &pool);
+    ptr = umpire_allocator_allocate(&pool, bytes);
+#else
     HIP_ERR(hipMallocManaged(&ptr, bytes));
+#endif
     return ptr;
   }
 
   __forceinline__ static void devices_free(void* ptr) {
+#if defined(HAVE_UMPIRE)
+    umpire_resourcemanager rm;
+    umpire_resourcemanager_get_instance(&rm);
+    umpire_allocator pool;
+    umpire_resourcemanager_get_allocator_by_name(&rm, "pool", &pool);
+    umpire_allocator_deallocate(&pool, ptr);
+#else
     HIP_ERR(hipFree(ptr));
+#endif
   }
 
   __forceinline__ static void devices_memcpy_d2d(void* dst, void* src, size_t bytes){

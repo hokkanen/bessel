@@ -1,6 +1,9 @@
 #include <hip/hip_runtime.h>
 #include <hiprand_kernel.h>
+
+#if defined(HAVE_UMPIRE)
 #include "umpire/interface/c_fortran/umpire.h"
+#endif
 
 // All macros and functions require a C++ compiler (HIP API does not support C)
 #define HIP_ERR(err) (hip_error(err, __FILE__, __LINE__))

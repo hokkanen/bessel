@@ -1,3 +1,7 @@
+#ifndef BESSEL_DEVICES_HIP_H
+#define BESSEL_DEVICES_HIP_H
+
+#include <cstdio>
 #include <hip/hip_runtime.h>
 #include <hiprand_kernel.h>
 
@@ -107,3 +111,5 @@ inline static void hip_error(hipError_t err, const char *file, int line) {
     HIP_ERR(hipStreamSynchronize(0));                               \
     (void)inc;                                                      \
   }
+
+#endif // !BESSEL_DEVICES_HIP_H

@@ -1,3 +1,6 @@
+#ifndef BESSEL_DEVICES_HOST_H
+#define BESSEL_DEVICES_HOST_H
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,3 +59,5 @@ inline static float devices_random_float(unsigned long long seed, unsigned long 
     loop_body;                                                      \
   }                                                                 \
 }
+
+#endif // !BESSEL_DEVICES_HOST_H

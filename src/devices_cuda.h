@@ -1,4 +1,7 @@
-#include <cuda.h>
+#ifndef BESSEL_DEVICES_CUDA_H
+#define BESSEL_DEVICES_CUDA_H
+
+#include <cstdio>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
@@ -87,4 +90,6 @@ extern "C"{
     }
   }
 }
+
+#endif // !BESSEL_DEVICES_CUDA_H
   

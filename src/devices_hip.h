@@ -1,3 +1,7 @@
+#ifndef BESSEL_DEVICES_HIP_H
+#define BESSEL_DEVICES_HIP_H
+
+#include <cstdio>
 #include <hip/hip_runtime.h>
 #include <hiprand_kernel.h>
 
@@ -105,3 +109,5 @@ namespace devices
     return var;
   }
 }
+
+#endif // !BESSEL_DEVICES_HIP_H

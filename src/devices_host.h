@@ -1,3 +1,6 @@
+#ifndef BESSEL_DEVICES_HOST_H
+#define BESSEL_DEVICES_HOST_H
+
 #include <cstdio>
 #include <cstdlib>
 #include <random>
@@ -68,3 +71,4 @@ namespace devices
     return z0;
   }
 }
+#endif // !BESSEL_DEVICES_HOST_H

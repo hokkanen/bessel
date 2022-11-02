@@ -1,3 +1,6 @@
+#ifndef BESSEL_COMMS_H
+#define BESSEL_COMMS_H
+
 #if defined(HAVE_MPI)
   #include "mpi.h"
 #endif
@@ -23,3 +26,5 @@ namespace comms{
   void finalize_procs();
   
 }
+
+#endif // !BESSEL_COMMS_H

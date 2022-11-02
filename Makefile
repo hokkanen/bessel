@@ -12,8 +12,8 @@ EXE = bessel
 else ifeq ($(HIP),CUDA)
 
 CXX = hipcc
-CXXDEFS = -DHAVE_HIP -I/appl/opt/rocm/rocm-4.0.0/hiprand/include/
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 --extended-lambda -gencode=arch=compute_80,code=sm_80
+CXXDEFS = -DHAVE_HIP -I$(shell pwd)/../../third-party/hiprand -I$(shell pwd)/../../third-party
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
 FILETYPE = .cpp
 EXE = bessel
 
@@ -29,7 +29,7 @@ else
 
 CXX = nvcc
 CXXDEFS = -DHAVE_CUDA
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 --extended-lambda -gencode=arch=compute_80,code=sm_80
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
 FILETYPE = .c
 EXE = bessel
 
@@ -85,8 +85,6 @@ depend:
 test: $(EXE)
 	./$(EXE)
 
-# KOKKOS_DEFINITIONS are outputs from Makefile.kokkos 
-# see https://github.com/kokkos/kokkos/wiki/Compiling
 $(EXE): $(OBJECTS)
 	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(EXE)
 

@@ -12,21 +12,22 @@ else ifeq ($(HIP),CUDA)
 
 CXX = hipcc
 CXXDEFS = -DHAVE_HIP -I$(shell pwd)/../../third-party/hiprand -I$(shell pwd)/../../third-party
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
 EXE = bessel
 
 else ifeq ($(HIP),ROCM)
 
 CXX = hipcc
-CXXDEFS = -DHAVE_HIP
-CXXFLAGS = -g -O3
+CXXDEFS = -DHAVE_HIP -I/appl/eap/opt/rocm-4.3.1/hiprand/include/ -I/appl/eap/opt/rocm-4.3.1/rocrand/include/
+CXXFLAGS = -g -O3 --offload-arch=gfx90a
+FILETYPE = .cpp
 EXE = bessel
 
 else
 
 CXX = nvcc
 CXXDEFS = -DHAVE_CUDA
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
 EXE = bessel
 
 endif

@@ -6,81 +6,80 @@
 #include <hiprand_kernel.h>
 
 #if defined(HAVE_UMPIRE)
-#include "umpire/interface/c_fortran/umpire.h"
+  #include "umpire/interface/c_fortran/umpire.h"
 #endif
 
 // All macros and functions require a C++ compiler (HIP API does not support C)
 #define HIP_ERR(err) (hip_error(err, __FILE__, __LINE__))
 inline static void hip_error(hipError_t err, const char *file, int line) {
-	if (err != hipSuccess) {
-		printf("\n\n%s in %s at line %d\n", hipGetErrorString(err), file, line);
-		exit(1);
-	}
+  if (err != hipSuccess) {
+    printf("\n\n%s in %s at line %d\n", hipGetErrorString(err), file, line);
+    exit(1);
+  }
 }
 
-  __forceinline__ static void devices_init(int node_rank) {
-    int num_devices = 0;
-    HIP_ERR(hipGetDeviceCount(&num_devices));
-    HIP_ERR(hipSetDevice(node_rank % num_devices));
-#if defined(HAVE_UMPIRE)
+__forceinline__ static void devices_init(int node_rank) {
+  int num_devices = 0;
+  HIP_ERR(hipGetDeviceCount(&num_devices));
+  HIP_ERR(hipSetDevice(node_rank % num_devices));
+  #if defined(HAVE_UMPIRE)
     umpire_resourcemanager rm;
     umpire_resourcemanager_get_instance(&rm);
     umpire_allocator allocator;
     umpire_resourcemanager_get_allocator_by_name(&rm, "UM", &allocator);
     umpire_allocator pool;
     umpire_resourcemanager_make_allocator_quick_pool(&rm, "pool", allocator, 1024, 1024, &pool);
-#endif
-  }
+  #endif
+}
 
-  __forceinline__ static void devices_finalize(int rank) {
-    printf("Rank %d, HIP finalized.\n", rank);
-  }
+__forceinline__ static void devices_finalize(int rank) {
+  printf("Rank %d, HIP finalized.\n", rank);
+}
 
-  __forceinline__ static void* devices_allocate(size_t bytes) {
-    void* ptr;
-#if defined(HAVE_UMPIRE)
+__forceinline__ static void* devices_allocate(size_t bytes) {
+  void* ptr;
+  #if defined(HAVE_UMPIRE)
     umpire_resourcemanager rm;
     umpire_resourcemanager_get_instance(&rm);
     umpire_allocator pool;
     umpire_resourcemanager_get_allocator_by_name(&rm, "pool", &pool);
     ptr = umpire_allocator_allocate(&pool, bytes);
-#else
+  #else
     HIP_ERR(hipMallocManaged(&ptr, bytes));
-#endif
-    return ptr;
-  }
+  #endif
+  return ptr;
+}
 
-  __forceinline__ static void devices_free(void* ptr) {
-#if defined(HAVE_UMPIRE)
+__forceinline__ static void devices_free(void* ptr) {
+  #if defined(HAVE_UMPIRE)
     umpire_resourcemanager rm;
     umpire_resourcemanager_get_instance(&rm);
     umpire_allocator pool;
     umpire_resourcemanager_get_allocator_by_name(&rm, "pool", &pool);
     umpire_allocator_deallocate(&pool, ptr);
-#else
+  #else
     HIP_ERR(hipFree(ptr));
-#endif
-  }
+  #endif
+}
 
-  __forceinline__ static void devices_memcpy_d2d(void* dst, void* src, size_t bytes){
-    HIP_ERR(hipMemcpy(dst, src, bytes, hipMemcpyDeviceToDevice));
-  }
+__forceinline__ static void devices_memcpy_d2d(void* dst, void* src, size_t bytes){
+  HIP_ERR(hipMemcpy(dst, src, bytes, hipMemcpyDeviceToDevice));
+}
 
-  template <typename T>
-  __host__ __device__ __forceinline__ static void devices_atomic_add(T *array_loc, T value){
-    // Define this function depending on whether it runs on GPU or CPU
-#if __HIP_DEVICE_COMPILE__
+template <typename T>
+__host__ __device__ __forceinline__ static void devices_atomic_add(T *array_loc, T value){
+  // Define this function depending on whether it runs on GPU or CPU
+  #if __HIP_DEVICE_COMPILE__
     atomicAdd(array_loc, value);
-#else
+  #else
     *array_loc += value;
-#endif
-  }
+  #endif
+}
 
-  template <typename T>
-  __host__ __device__ static T devices_random_float(unsigned long long seed, unsigned long long seq, int idx, T mean, T stdev){    
-    
-    T var = 0;
-#if __HIP_DEVICE_COMPILE__
+template <typename T>
+__host__ __device__ static T devices_random_float(unsigned long long seed, unsigned long long seq, int idx, T mean, T stdev){    
+T var = 0;
+  #if __HIP_DEVICE_COMPILE__
     hiprandStatePhilox4_32_10_t state;
 
     // hiprand_init() reproduces the same random number with the same seed and seq
@@ -88,28 +87,28 @@ inline static void hip_error(hipError_t err, const char *file, int line) {
 
     // hiprand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1
     var = stdev * hiprand_normal(&state) + mean;
-#endif
-    return var;
-  }
+  #endif
+  return var;
+}
 
-  template <typename LambdaBody> 
-  __global__ static void hipKernel(LambdaBody lambda, const int loop_size)
+template <typename Lambda> 
+__global__ static void hipKernel(Lambda lambda, const int loop_size)
+{
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i < loop_size)
   {
-    const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if(i < loop_size)
-    {
-      lambda(i);
-    }
+    lambda(i);
   }
+}
 
-  #define devices_parallel_for(loop_size, inc, loop_body)           \
-  {                                                                 \
-    const int blocksize = 64;                                       \
-    const int gridsize = (loop_size - 1 + blocksize) / blocksize;   \
-    auto lambda_body = [=] __host__ __device__ (int inc) loop_body; \
-    hipKernel<<<gridsize, blocksize>>>(lambda_body, loop_size);     \
-    HIP_ERR(hipStreamSynchronize(0));                               \
-    (void)inc;                                                      \
-  }
+#define devices_parallel_for(loop_size, inc, loop_body)           \
+{                                                                 \
+  const int blocksize = 256;                                      \
+  const int gridsize = (loop_size - 1 + blocksize) / blocksize;   \
+  auto lambda_body = [=] __host__ __device__ (int inc) loop_body; \
+  hipKernel<<<gridsize, blocksize>>>(lambda_body, loop_size);     \
+  HIP_ERR(hipStreamSynchronize(0));                               \
+  (void)inc;                                                      \
+}
 
 #endif // !BESSEL_DEVICES_HIP_H

@@ -1,15 +1,15 @@
 #!/bin/bash -x
-#SBATCH --account=Project_2002078
-#SBATCH --partition=gputest
+#SBATCH --account=Project_462000007
+#SBATCH --partition=eap
 #SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --mem-per-cpu=16G
-#SBATCH --gres=gpu:v100:4
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --gpus-per-task=1 
 #SBATCH --time=00:15:00
 #SBATCH --output=bessel.out
 #SBATCH --error=bessel.err
 
-# salloc --account=Project_2002078 --nodes=1 --partition=gputest --gres=gpu:v100:4 --mem-per-cpu=16G --time=00:15:00
+# srun --account=Project_462000007 -N1 -n1 --partition=eap --cpus-per-task=1 --gpus-per-task=1 --time=00:15:00 ./bessel
 
-srun bessel 4
+srun bessel 1
 #srun gdb -ex r -ex bt -ex quit --args bessel 2

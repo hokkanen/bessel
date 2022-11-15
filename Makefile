@@ -2,32 +2,32 @@ default: build
 	echo "Start Build"
 
 # Accelerator architecture
-ifeq ($(HOST),1)
+ifeq ($(CUDA),1)
 
-CXX = g++
-CXXFLAGS = -g -O3
+CXX = nvcc
+CXXDEFS = -DHAVE_CUDA
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
 EXE = bessel
 
 else ifeq ($(HIP),CUDA)
 
 CXX = hipcc
-CXXDEFS = -DHAVE_HIP -I$(shell pwd)/../../third-party/hiprand -I$(shell pwd)/../../third-party
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
+CXXDEFS = -DHAVE_HIP
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80 -I$(shell pwd)/hiprand
 EXE = bessel
 
 else ifeq ($(HIP),ROCM)
 
 CXX = hipcc
-CXXDEFS = -DHAVE_HIP -I/appl/eap/opt/rocm-4.3.1/hiprand/include/ -I/appl/eap/opt/rocm-4.3.1/rocrand/include/
-CXXFLAGS = -g -O3 --offload-arch=gfx90a
+CXXDEFS = -DHAVE_HIP
+CXXFLAGS = -g -O3 --offload-arch=gfx90a -I/opt/rocm/hiprand/include/ -I/opt/rocm/rocrand/include/
 FILETYPE = .cpp
 EXE = bessel
 
 else
 
-CXX = nvcc
-CXXDEFS = -DHAVE_CUDA
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
+CXX = g++
+CXXFLAGS = -g -O3
 EXE = bessel
 
 endif
@@ -36,8 +36,8 @@ endif
 ifeq ($(MATPLOT),1)
 
 CXXDEFS += -DHAVE_MATPLOT
-CXXFLAGS += -std=c++17 -I/projappl/project_2002078/jarohokk/matplot/include/
-LDFLAGS += -L/projappl/project_2002078/jarohokk/matplot/lib64/ -L/projappl/project_2002078/jarohokk/matplot/lib64/Matplot++/
+CXXFLAGS += -std=c++17 -I$(shell pwd)/matplot/include/
+LDFLAGS += -L$(shell pwd)/matplot/lib64/ -L$(shell pwd)/matplot/lib64/Matplot++/
 LIBS += -lmatplot -ljpeg -ltiff -lz -lpng -lnodesoup
 
 endif
@@ -45,10 +45,17 @@ endif
 # Message passing protocol
 ifeq ($(MPI),1)
 
-MPICXX = mpicxx
-MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
-LDFLAGS += -L/appl/spack/install-tree/gcc-9.1.0/openmpi-4.1.1-vonyow/lib
-LIBS += -lmpi
+# On Puhti
+#MPICXX = mpicxx
+#MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
+#LDFLAGS += -L/appl/spack/install-tree/gcc-9.1.0/openmpi-4.1.1-vonyow/lib
+#LIBS += -lmpi -lm
+
+# On Lumi
+MPICXX = $(CXX)
+MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -I${MPICH_DIR}/include
+LDFLAGS += -L${MPICH_DIR}/lib -L${CRAY_MPICH_ROOTDIR}/gtl/lib
+LIBS += -lmpi -lmpi_gtl_hsa
 
 else
 

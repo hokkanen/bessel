@@ -7,10 +7,10 @@
 
 #define HIP_ERR(err) (hip_error(err, __FILE__, __LINE__))
 inline static void hip_error(hipError_t err, const char *file, int line) {
-	if (err != hipSuccess) {
-		printf("\n\n%s in %s at line %d\n", hipGetErrorString(err), file, line);
-		exit(1);
-	}
+  if (err != hipSuccess) {
+    printf("\n\n%s in %s at line %d\n", hipGetErrorString(err), file, line);
+    exit(1);
+  }
 }
 
 #define DEVICE_LAMBDA [=] __host__ __device__
@@ -41,8 +41,8 @@ namespace devices
     HIP_ERR(hipMemcpy(dst, src, bytes, hipMemcpyDeviceToDevice));
   }
 
-  template <typename LambdaBody> 
-  __global__ static void hipKernel(LambdaBody lambda, const int loop_size)
+  template <typename Lambda> 
+  __global__ static void hipKernel(Lambda lambda, const int loop_size)
   {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if(i < loop_size)
@@ -51,9 +51,9 @@ namespace devices
     }
   }
 
-  template <typename T>
-  __forceinline__ static void parallel_for(int loop_size, T loop_body) {
-    const int blocksize = 64;
+  template <typename Lambda>
+  __forceinline__ static void parallel_for(int loop_size, Lambda loop_body) {
+    const int blocksize = 256;
     const int gridsize = (loop_size - 1 + blocksize) / blocksize;
     hipKernel<<<gridsize, blocksize>>>(loop_body, loop_size);
     HIP_ERR(hipStreamSynchronize(0));
@@ -61,7 +61,7 @@ namespace devices
 
   template <typename Lambda, typename T>
   __forceinline__ static void parallel_reduce(const int loop_size, Lambda loop_body, T *sum) {
-    const int blocksize = 64;
+    const int blocksize = 256;
     const int gridsize = (loop_size - 1 + blocksize) / blocksize;
 
     T* buf;
@@ -86,26 +86,25 @@ namespace devices
   template <typename T>
   __host__ __device__ __forceinline__ static void atomic_add(T *array_loc, T value){
     // Define this function depending on whether it runs on GPU or CPU
-#if __HIP_DEVICE_COMPILE__
-    atomicAdd(array_loc, value);
-#else
-    *array_loc += value;
-#endif
+    #if __HIP_DEVICE_COMPILE__
+      atomicAdd(array_loc, value);
+    #else
+      *array_loc += value;
+    #endif
   }
 
   template <typename T>
   __host__ __device__ static T random_float(unsigned long long seed, unsigned long long seq, int idx, T mean, T stdev){    
-    
     T var = 0;
-#if __HIP_DEVICE_COMPILE__
-    hiprandStatePhilox4_32_10_t state;
-
-    // hiprand_init() reproduces the same random number with the same seed and seq
-    hiprand_init(seed, seq, 0, &state);
-
-    // hiprand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1
-    var = stdev * hiprand_normal(&state) + mean;
-#endif
+    #if __HIP_DEVICE_COMPILE__
+      hiprandStatePhilox4_32_10_t state;
+  
+      // hiprand_init() reproduces the same random number with the same seed and seq
+      hiprand_init(seed, seq, 0, &state);
+  
+      // hiprand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1
+      var = stdev * hiprand_normal(&state) + mean;
+    #endif
     return var;
   }
 }

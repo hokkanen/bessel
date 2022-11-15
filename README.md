@@ -7,29 +7,27 @@ The implementation uses a special construct for the parallel loops in [bessel.cp
 The code can be conditionally compiled for either CUDA, HIP, or HOST execution with or without MPI or Matplot (for plotting the results). The correct definitions for each accelerator backend option are selected in [comms.h](src/comms.h) by choosing the respective header file. The compilation instructions are shown below:
 
 ```
-// Compile to run parallel on GPU with CUDA
+// Compile to run sequentially on CPU
 make
 
-// Compile to run parallel on GPU with CUDA and MPI
+// Compile to run parallel on CPUs with MPI
 make MPI=1
 
-// Compile to run parallel on GPU with HIP and MPI
-make HIP=CUDA MPI=1
+// Compile to run parallel on GPU with CUDA
+make CUDA=1
 
-// Compile to run sequentially on CPU with MPI and MATPLOT
-make HOST=1 MPI=1 MATPLOT=1
+// Compile to run parallel on GPU with HIP (NVIDIA GPUs)
+make HIP=CUDA
 
+// Compile to run parallel on many GPUs with HIP and MPI (AMD GPUs)
+make HIP=ROCM MPI=1
+
+// Compile to run parallel on many GPUs with HIP, MPI, and Matplotplusplus (AMD GPUs)
+make HIP=ROCM MPI=1 MATPLOT=1
 ```
+## Additional notes
 
-The executable can be run with 4 MPI processes using a sbatch script: 
+The executable can be run on Lumi with 4 MPI processes with srun: 
 ```
-#!/bin/bash -x
-#SBATCH --account=xxx
-#SBATCH --partition=gputest
-#SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --gres=gpu:v100:4
-#SBATCH --time=00:15:00
-
-srun bessel 4
+srun --account=Project_462000007 -N1 -n4 --partition=eap --cpus-per-task=1 --gpus-per-task=1 --time=00:15:00 ./bessel 4
 ```

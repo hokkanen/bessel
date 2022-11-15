@@ -51,14 +51,12 @@ ifeq ($(MPI),1)
 # On Puhti
 #MPICXX = mpicxx
 #MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
-#LDFLAGS += -L/appl/spack/install-tree/gcc-9.1.0/openmpi-4.1.1-vonyow/lib
-#LIBS += -lmpi -lm
 
 # On Lumi
-MPICXX = $(CXX)
-MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -I${MPICH_DIR}/include
-LDFLAGS += -L${MPICH_DIR}/lib -L${CRAY_MPICH_ROOTDIR}/gtl/lib
-LIBS += -lmpi -lmpi_gtl_hsa -lm
+MPICXX = CC
+MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++11 -x hip
+LDFLAGS += -L${ROCM_PATH}/lib
+LIBS += -lamdhip64 -lm
 
 else
 
@@ -93,7 +91,7 @@ test: $(EXE)
 	./$(EXE)
 
 $(EXE): $(OBJECTS)
-	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(EXE)
+	$(MPICXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(EXE)
 
 clean: $(CLEAN)
 	rm -f $(OBJECTS) $(EXE) src/*.cpp

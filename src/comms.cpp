@@ -2,6 +2,7 @@
 
 #if defined(HAVE_MPI)
 
+/* Namespace for the communication functions */
 namespace comms{
 
   static int MPI_INITIALIZED = 0;
@@ -47,7 +48,7 @@ namespace comms{
   }
   
   void barrier_procs(){
-    // Synchronize across all MPI processes
+    /* Synchronize across all MPI processes */
     if (MPI_INITIALIZED == 1) 
       MPI_Barrier(MPI_COMM_WORLD);
   }
@@ -86,6 +87,7 @@ namespace comms{
 
 #else
 
+/* Namespace for the communication functions */
 namespace comms{
   int get_procs(){
     int comm_size = 1;

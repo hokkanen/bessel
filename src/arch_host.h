@@ -54,13 +54,13 @@ namespace arch
     }
     /* Use Box Muller algorithm to get a float from a normal distribution */
     const float two_pi = 2.0f * M_PI;
-	  float u1 = (float) rand() / RAND_MAX;
-	  float u2 = (float) rand() / RAND_MAX;
-	  float factor = stdev * sqrtf (-2.0f * logf (u1));
-	  float trig_arg = two_pi * u2;  
+    const float u1 = (float) rand() / RAND_MAX;
+    const float u2 = (float) rand() / RAND_MAX;
+    const float factor = stdev * sqrtf (-2.0f * logf (u1));
+    const float trig_arg = two_pi * u2;  
     /* Box Muller algorithm produces two random normally distributed floats, z0 and z1 */
-    float z0 = factor * cosf (trig_arg) + mean; /* Need only one */
-	  // float z1 = factor * sinf (trig_arg) + mean; 
+    const float z0 = factor * cosf (trig_arg) + mean; /* Need only one */
+    // float z1 = factor * sinf (trig_arg) + mean; 
     return z0;
   }
 

@@ -27,7 +27,7 @@ inline static void hip_error(hipError_t err, const char *file, int line) {
 }
 
 /* Device backend initialization */
-__forceinline__ static void devices_init(int node_rank) {
+__forceinline__ static void arch_init(int node_rank) {
   int num_devices = 0;
   HIP_ERR(hipGetDeviceCount(&num_devices));
   HIP_ERR(hipSetDevice(node_rank % num_devices));
@@ -42,12 +42,12 @@ __forceinline__ static void devices_init(int node_rank) {
 }
 
 /* Device backend finalization */
-__forceinline__ static void devices_finalize(int rank) {
+__forceinline__ static void arch_finalize(int rank) {
   printf("Rank %d, HIP finalized.\n", rank);
 }
 
 /* Device function for memory allocation */
-__forceinline__ static void* devices_allocate(size_t bytes) {
+__forceinline__ static void* arch_allocate(size_t bytes) {
   void* ptr;
   #if defined(HAVE_UMPIRE)
     umpire_resourcemanager rm;
@@ -62,7 +62,7 @@ __forceinline__ static void* devices_allocate(size_t bytes) {
 }
 
 /* Device function for memory deallocation */
-__forceinline__ static void devices_free(void* ptr) {
+__forceinline__ static void arch_free(void* ptr) {
   #if defined(HAVE_UMPIRE)
     umpire_resourcemanager rm;
     umpire_resourcemanager_get_instance(&rm);
@@ -75,13 +75,13 @@ __forceinline__ static void devices_free(void* ptr) {
 }
 
 /* Device-to-device memory copy */
-__forceinline__ static void devices_memcpy_d2d(void* dst, void* src, size_t bytes){
+__forceinline__ static void arch_memcpy_d2d(void* dst, void* src, size_t bytes){
   HIP_ERR(hipMemcpy(dst, src, bytes, hipMemcpyDeviceToDevice));
 }
 
 /* Atomic add function for both host and device use */
 template <typename T>
-__host__ __device__ __forceinline__ static void devices_atomic_add(T *array_loc, T value){
+__host__ __device__ __forceinline__ static void arch_atomic_add(T *array_loc, T value){
     /* Define this function depending on whether it runs on GPU or CPU */
   #if __HIP_DEVICE_COMPILE__
     atomicAdd(array_loc, value);
@@ -92,7 +92,7 @@ __host__ __device__ __forceinline__ static void devices_atomic_add(T *array_loc,
 
 /* A function for getting a random float from the standard distribution */
 template <typename T>
-__host__ __device__ __forceinline__ static T devices_random_float(unsigned long long seed, unsigned long long seq, unsigned int idx, T mean, T stdev){    
+__host__ __device__ __forceinline__ static T arch_random_float(unsigned long long seed, unsigned long long seq, unsigned int idx, T mean, T stdev){    
 T var = 0;
   #if __HIP_DEVICE_COMPILE__
     hiprandStatePhilox4_32_10_t state;
@@ -184,7 +184,7 @@ __forceinline__ static void _arch_parallel_reduce_driver(const unsigned int loop
 }
 
 /* Parallel for driver macro for the HIP loops */
-#define devices_parallel_for(loop_size, inc, loop_body)                    \
+#define arch_parallel_for(loop_size, inc, loop_body)                       \
 {                                                                          \
   const unsigned int blocksize = ARCH_BLOCKSIZE;                           \
   const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;   \
@@ -195,7 +195,7 @@ __forceinline__ static void _arch_parallel_reduce_driver(const unsigned int loop
 }
 
 /* Parallel reduce wrapper macro for the HIP reductions */
-#define devices_parallel_reduce(loop_size, inc, sum, loop_body)            \
+#define arch_parallel_reduce(loop_size, inc, sum, loop_body)               \
 {                                                                          \
   auto lambda_body = [=] __host__ __device__ (unsigned int inc, float *sum)\
     loop_body;                                                             \

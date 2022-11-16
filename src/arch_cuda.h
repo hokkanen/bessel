@@ -23,31 +23,31 @@ extern "C"{
   }
   
   /* Device backend initialization */
-  __forceinline__ static void devices_init(int node_rank) {
+  __forceinline__ static void arch_init(int node_rank) {
     int num_devices = 0;
     CUDA_ERR(cudaGetDeviceCount(&num_devices));
     CUDA_ERR(cudaSetDevice(node_rank % num_devices));
   }
 
   /* Device backend finalization */
-  __forceinline__ static void devices_finalize(int rank) {
+  __forceinline__ static void arch_finalize(int rank) {
     printf("Rank %d, CUDA finalized.\n", rank);
   }
 
   /* Device function for memory allocation */
-  __forceinline__ static void* devices_allocate(size_t bytes) {
+  __forceinline__ static void* arch_allocate(size_t bytes) {
     void* ptr;
     CUDA_ERR(cudaMallocManaged(&ptr, bytes));
     return ptr;
   }
 
   /* Device function for memory deallocation */
-  __forceinline__ static void devices_free(void* ptr) {
+  __forceinline__ static void arch_free(void* ptr) {
     CUDA_ERR(cudaFree(ptr));
   }
 
   /* Device-to-device memory copy */
-  __forceinline__ static void devices_memcpy_d2d(void* dst, void* src, size_t bytes){
+  __forceinline__ static void arch_memcpy_d2d(void* dst, void* src, size_t bytes){
     CUDA_ERR(cudaMemcpy(dst, src, bytes, cudaMemcpyDeviceToDevice));
   }
 
@@ -56,7 +56,7 @@ extern "C"{
 
     /* Atomic add function for both host and device use */
     template <typename T>
-    __host__ __device__ __forceinline__ static void devices_atomic_add(T *array_loc, T value){
+    __host__ __device__ __forceinline__ static void arch_atomic_add(T *array_loc, T value){
       /* Define this function depending on whether it runs on GPU or CPU */
       #ifdef __CUDA_ARCH__
         atomicAdd(array_loc, value);
@@ -67,7 +67,7 @@ extern "C"{
   
     /* A function for getting a random float from the standard distribution */
     template <typename T>
-    __host__ __device__ __forceinline__ static T devices_random_float(unsigned long long seed, unsigned long long seq, unsigned int idx, T mean, T stdev){    
+    __host__ __device__ __forceinline__ static T arch_random_float(unsigned long long seed, unsigned long long seq, unsigned int idx, T mean, T stdev){    
       T var = 0;
       #ifdef __CUDA_ARCH__
         curandStatePhilox4_32_10_t state;
@@ -159,7 +159,7 @@ extern "C"{
     }
 
     /* Parallel for driver macro for the CUDA loops */
-    #define devices_parallel_for(loop_size, inc, loop_body)                    \
+    #define arch_parallel_for(loop_size, inc, loop_body)                       \
     {                                                                          \
       const unsigned int blocksize = ARCH_BLOCKSIZE;                           \
       const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;   \
@@ -170,7 +170,7 @@ extern "C"{
     }
 
     /* Parallel reduce wrapper macro for the CUDA reductions */
-    #define devices_parallel_reduce(loop_size, inc, sum, loop_body)            \
+    #define arch_parallel_reduce(loop_size, inc, sum, loop_body)               \
     {                                                                          \
       auto lambda_body = [=] __host__ __device__ (unsigned int inc, float *sum)\
         loop_body;                                                             \

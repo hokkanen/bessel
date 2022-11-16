@@ -21,7 +21,6 @@ else ifeq ($(HIP),ROCM)
 CXX = hipcc
 CXXDEFS = -DHAVE_HIP
 CXXFLAGS = -g -O3 --offload-arch=gfx90a -I/opt/rocm/hiprand/include/ -I/opt/rocm/rocrand/include/
-FILETYPE = .cpp
 EXE = bessel
 
 else

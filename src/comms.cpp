@@ -70,15 +70,15 @@ namespace comms{
       MPI_Init(argc, argv);
       MPI_INITIALIZED = 1;
     }
-    // Some device backends require an initialization
-    devices::init(get_node_rank());
+    /* Some device backends require an initialization */
+    arch::init(get_node_rank());
   }
   
   void finalize_procs(){
-    // Some device backends also require a finalization
-    devices::finalize(get_rank());
+    /* Some device backends also require a finalization */
+    arch::finalize(get_rank());
 
-    // Finalize MPI if it is used
+    /* Finalize MPI if it is used */
     if (MPI_INITIALIZED == 1) 
       MPI_Finalize();
   }
@@ -114,13 +114,13 @@ namespace comms{
   }
   
   void init_procs(int *argc, char **argv[]){
-    // Some device backends require an initialization
-    devices::init(get_node_rank());
+    /* Some device backends require an initialization */
+    arch::init(get_node_rank());
   }
   
   void finalize_procs(){
-    // Some device backends also require a finalization
-    devices::finalize(get_rank());
+    /* Some device backends also require a finalization */
+    arch::finalize(get_rank());
   }
 }
 

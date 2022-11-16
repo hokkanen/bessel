@@ -1,16 +1,21 @@
 #ifndef BESSEL_COMMS_H
 #define BESSEL_COMMS_H
 
+/* Each HAVE_DEF is set during compile time
+ * and determine which dependencies are used
+ * by including the respective header files
+ */
+
 #if defined(HAVE_MPI)
   #include "mpi.h"
 #endif
 
 #if defined(HAVE_CUDA)
-  #include "devices_cuda.h"
+  #include "arch_cuda.h"
 #elif defined(HAVE_HIP)
-  #include "devices_hip.h"
+  #include "arch_hip.h"
 #else
-  #include "devices_host.h"
+  #include "arch_host.h"
 #endif
 
 namespace comms{

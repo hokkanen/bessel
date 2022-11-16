@@ -13,7 +13,7 @@ else ifeq ($(HIP),CUDA)
 
 CXX = hipcc
 CXXDEFS = -DHAVE_HIP
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80 -I$(shell pwd)/hiprand
+CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80 -I$(shell pwd)/hiprand -I$(shell pwd)/
 EXE = bessel
 
 else ifeq ($(HIP),ROCM)

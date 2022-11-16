@@ -102,30 +102,29 @@ namespace arch
     /* Static shared memory declaration */
     __shared__ typename BlockReduce::TempStorage temp_storage[NReductions];
   
-    /* Get the global 1D thread index*/
+    /* Static thread data declaration */
+    T thread_data[NReductions] = {0};
+  
+    /* Get the global 1D thread index */
     const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  
-    /* Check the loop limits*/
-    if (idx < n_total) {
-  
-      /* Static thread data declaration */
-      T thread_data[NReductions];
-    
+
+    /* Check the loop limits */
+    if (idx < n_total){
       /* Initialize thread data values */
       for(unsigned int i = 0; i < NReductions; i++)
         thread_data[i] = init_val[i];
     
       /* Evaluate the loop body */
       loop_body(idx, thread_data);
-    
-      /* Perform reductions */
-      for(unsigned int i = 0; i < NReductions; i++){
-        /* Compute the block-wide sum for thread 0 which stores it */
-        T aggregate = BlockReduce(temp_storage[i]).Sum(thread_data[i]);
-        /* The first thread of each block stores the block-wide aggregate atomically */
-        if(threadIdx.x == 0) 
-          atomicAdd(&rslt[i], aggregate);
-      }
+    }
+
+    /* Perform reductions */
+    for(unsigned int i = 0; i < NReductions; i++){
+      /* Compute the block-wide sum for thread 0 which stores it */
+      T aggregate = BlockReduce(temp_storage[i]).Sum(thread_data[i]);
+      /* The first thread of each block stores the block-wide aggregate atomically */
+      if(threadIdx.x == 0) 
+        atomicAdd(&rslt[i], aggregate);
     }
   }
 

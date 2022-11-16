@@ -1,5 +1,6 @@
 #include "comms.h"
 
+/* Communication functions */
 #if defined(HAVE_MPI)
 
 static int MPI_INITIALIZED = 0;
@@ -45,7 +46,7 @@ int comms_get_node_procs(){
 }
 
 void comms_barrier_procs(){
-  // Synchronize across all MPI processes
+    /* Synchronize across all MPI processes */
   if (MPI_INITIALIZED == 1) 
     MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -73,14 +74,14 @@ void comms_init_procs(int *argc, char **argv[]){
     MPI_Init(argc, argv);
     MPI_INITIALIZED = 1;
   }
-  // Some device backends require an initialization
-  devices_init(comms_get_node_rank());
+  /* Some device backends require an initialization */
+  arch_init(comms_get_node_rank());
 }
 
 void comms_finalize_procs(){
-  // Some device backends also require a finalization
-  devices_finalize(comms_get_rank());
-  // Finalize MPI if it is used
+  /* Some device backends also require a finalization */
+  arch_finalize(comms_get_rank());
+  /* Finalize MPI if it is used */
   if (MPI_INITIALIZED == 1) 
     MPI_Finalize();
 }
@@ -117,13 +118,13 @@ void comms_reduce_procs(float *sbuf, int count){
 }
 
 void comms_init_procs(int *argc, char **argv[]){
-  // Some device backends require an initialization
-  devices_init(comms_get_node_rank());
+  /* Some device backends require an initialization */
+  arch_init(comms_get_node_rank());
 }
 
 void comms_finalize_procs(){
-  // Some device backends also require a finalization
-  devices_finalize(comms_get_rank());
+  /* Some device backends also require a finalization */
+  arch_finalize(comms_get_rank());
 }
 
 #endif

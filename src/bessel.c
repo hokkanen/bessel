@@ -24,9 +24,11 @@ int main(int argc, char *argv []){
   /* Set timer */
   clock_t begin = clock();
 
-  /* Memory allocations for the mean squared errors */
-  float* mse_stdev = (float*)arch_allocate(n_beta * sizeof(float));
-  float* mse_var = (float*)arch_allocate(n_beta * sizeof(float));
+  /* Array for the mean squared errors (the sum of errors across iterations) */
+  float mse[2 * n_beta];
+
+  /* Initialize mse array to zero */
+  memset(mse,'0', 2 * n_beta * sizeof(float));
 
   /* Get the time value for the seed (only the value from the root rank is used) */
   unsigned int timeval = (unsigned int)time(0);
@@ -38,17 +40,9 @@ int main(int argc, char *argv []){
   srand(my_rank + timeval);
   unsigned long long seed = (unsigned long long)rand();
 
-  /* Initialize the mean error arrays */
-  unsigned int j;
-  arch_parallel_for(n_beta, j, 
-  {
-    mse_stdev[j] = 0.0f;
-    mse_var[j] = 0.0f;
-  });
-
   /* Run the loop over iterations */
   unsigned int iter;
-  arch_parallel_for(N_ITER, iter, 
+  arch_parallel_reduce(N_ITER, iter, mse, 
   {
     /* Calculate the mean of the population and the sample */
     float p_mean = 0.0f;
@@ -85,6 +79,9 @@ int main(int argc, char *argv []){
     //printf("p_var: %f\n",p_var);
     
     /* Calculate the mean squared error in the sample standard deviation and variance for different beta */
+    float *mse_stdev = &mse[0];
+    float *mse_var = &mse[n_beta];
+      
     for(unsigned int j = 0; j < n_beta; ++j){
       float sub = j * (range_beta / n_beta) - range_beta / 2.0f;
       b_var[j] = b_sum / (N_SAMPLE - sub);
@@ -93,17 +90,18 @@ int main(int argc, char *argv []){
       //printf("b_var[%u]: %f, error[iter: %u][sub: %f]: %f\n", j, b_var[j], iter, sub, sqrt(diff_var * diff_var));  
       
       /* Sum the errors of each iteration */
-      arch_atomic_add(&mse_stdev[j], diff_stdev * diff_stdev);
-      arch_atomic_add(&mse_var[j], diff_var * diff_var);
+      mse_stdev[j] += diff_stdev * diff_stdev;
+      mse_var[j] += diff_var * diff_var;
     }     
   });
 
   /* Each process sends its values to reduction, root process collects the results */
-  comms_reduce_procs(mse_stdev, n_beta);
-  comms_reduce_procs(mse_var, n_beta);
+  comms_reduce_procs(mse, 2 * n_beta);
 
   /* Divide the error sums to find the averaged errors for each tested beta value */
   if(my_rank == 0){
+    float *mse_stdev = &mse[0];
+    float *mse_var = &mse[n_beta];
     for(unsigned int j = 0; j < n_beta; ++j){
       mse_stdev[j] /= (comms_get_procs() * N_ITER);
       mse_var[j] /= (comms_get_procs() * N_ITER);
@@ -113,10 +111,6 @@ int main(int argc, char *argv []){
       printf("Beta = %.2f: RMSE for stdev = %.5f and var = %.5f\n", sub, rmse_stdev, rmse_var);
     }
   }
-  
-  /* Memory deallocations */
-  arch_free((void*)mse_stdev);
-  arch_free((void*)mse_var);
 
   /* Finalize processes and devices */
   comms_finalize_procs();

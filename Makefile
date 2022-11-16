@@ -49,16 +49,16 @@ endif
 ifeq ($(MPI),1)
 
 # On Puhti
-MPICXX = mpicxx
-MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
-LDFLAGS += -L${CUDA_PATH}/lib64
-LIBS += -lcudart
+# MPICXX = mpicxx
+# MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
+# LDFLAGS += -L${CUDA_PATH}/lib64
+# LIBS += -lcudart
 
 # On Lumi
-# MPICXX = CC
-# MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++11 -x hip
-# LDFLAGS += -L${ROCM_PATH}/lib
-# LIBS += -lamdhip64 -lm
+MPICXX = CC
+MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++11 -x hip
+LDFLAGS += -L${ROCM_PATH}/lib
+LIBS += -lamdhip64 -lm
 
 else
 

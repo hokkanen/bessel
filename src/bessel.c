@@ -31,7 +31,7 @@ int main(int argc, char *argv []){
   memset(mse,'0', 2 * n_beta * sizeof(float));
 
   /* Get the time value for the seed (only the value from the root rank is used) */
-  unsigned int timeval = (unsigned int)time(0);
+  int timeval = (int)time(0);
 
   /* Broadcast root rank time value to all ranks */
   comms_bcast(&timeval, 1, 0);

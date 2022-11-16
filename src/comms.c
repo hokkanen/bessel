@@ -51,12 +51,12 @@ void comms_barrier_procs(){
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
-void comms_bcast(unsigned int *buf, unsigned int count, unsigned int root){
+void comms_bcast(int *buf, int count, int root){
   if (MPI_INITIALIZED == 1)
     MPI_Bcast(&buf, count, MPI_INT, root, MPI_COMM_WORLD);
 }
 
-void comms_reduce_procs(float *sbuf, unsigned int count){
+void comms_reduce_procs(float *sbuf, int count){
   if (MPI_INITIALIZED == 1){
     float* rbuf;
     if(comms_get_rank() == 0)
@@ -111,10 +111,10 @@ int comms_get_node_procs(){
 void comms_barrier_procs(){
 }
 
-void comms_bcast(unsigned int *buf, unsigned int count, unsigned int root){
+void comms_bcast(int *buf, int count, int root){
 }
 
-void comms_reduce_procs(float *sbuf, unsigned int count){
+void comms_reduce_procs(float *sbuf, int count){
 }
 
 void comms_init_procs(int *argc, char **argv[]){

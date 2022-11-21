@@ -94,7 +94,7 @@ namespace arch
 
   /* A general device kernel for reductions */
   template <unsigned int NReductions, typename Lambda, typename T>
-  __global__ static void reduction_kernel(Lambda loop_body, const T *init_val, T *rslt, const unsigned int n_total)
+  __global__ static void reduction_kernel(Lambda loop_body, T *rslt, const unsigned int n_total)
   {
     /* Specialize BlockReduce for a 1D block of ARCH_BLOCKSIZE_R threads of type `T` */
     typedef hipcub::BlockReduce<T, ARCH_BLOCKSIZE> BlockReduce;
@@ -108,15 +108,9 @@ namespace arch
     /* Get the global 1D thread index */
     const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    /* Check the loop limits */
-    if (idx < n_total){
-      /* Initialize thread data values */
-      for(unsigned int i = 0; i < NReductions; i++)
-        thread_data[i] = init_val[i];
-    
-      /* Evaluate the loop body */
+    /* Check the loop limits and evaluate the loop body */
+    if (idx < n_total)
       loop_body(idx, thread_data);
-    }
 
     /* Perform reductions */
     for(unsigned int i = 0; i < NReductions; i++){
@@ -149,21 +143,15 @@ namespace arch
     T* d_buf;
     HIP_ERR(hipMalloc(&d_buf, NReductions*sizeof(T)));
     HIP_ERR(hipMemcpy(d_buf, sum, NReductions*sizeof(T), hipMemcpyHostToDevice));
-    
-    /* Create a device buffer to transfer the initial values to device */
-    T* d_const_buf;
-    HIP_ERR(hipMalloc(&d_const_buf, NReductions*sizeof(T)));
-    HIP_ERR(hipMemcpy(d_const_buf, d_buf, NReductions*sizeof(T), hipMemcpyDeviceToDevice));
   
     /* Call the kernel (the number of reductions known at compile time) */
-    reduction_kernel<NReductions><<<gridsize, blocksize>>>(loop_body, d_const_buf, d_buf, loop_size);
+    reduction_kernel<NReductions><<<gridsize, blocksize>>>(loop_body, d_buf, loop_size);
     /* Synchronize after kernel call */
     HIP_ERR(hipStreamSynchronize(0));
     
     /* Copy the results back to host and free the allocated memory back to pool*/
     HIP_ERR(hipMemcpy(sum, d_buf, NReductions*sizeof(T), hipMemcpyDeviceToHost));
     HIP_ERR(hipFree(d_buf));
-    HIP_ERR(hipFree(d_const_buf));
   }
 }
 

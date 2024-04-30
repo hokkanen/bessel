@@ -10,6 +10,9 @@ The code can be conditionally compiled for either CUDA, HIP, or HOST execution w
 // Compile to run sequentially on CPU
 make
 
+// Compile to run parallel on CPU with KOKKOS (OpenMP)
+make KOKKOS=OPENMP
+
 // Compile to run parallel on CPUs with MPI
 make MPI=1
 
@@ -19,11 +22,14 @@ make CUDA=1
 // Compile to run parallel on GPU with HIP (NVIDIA GPUs)
 make HIP=CUDA
 
-// Compile to run parallel on many GPUs with HIP and MPI (AMD GPUs)
-make HIP=ROCM MPI=1
+// Compile to run parallel on GPU with HIP (AMD GPUs)
+make HIP=ROCM
 
-// Compile to run parallel on many GPUs with HIP, MPI, and Matplotplusplus (AMD GPUs)
-make HIP=ROCM MPI=1 MATPLOT=1
+// Compile to run parallel on many GPUs with KOKKOS and MPI (NVIDIA GPUs)
+make KOKKOS=CUDA MPI=1
+
+// Compile to run parallel on many GPUs with KOKKOS, MPI, and Matplotplusplus (AMD GPUs)
+make KOKKOS=ROCM MPI=1 MATPLOT=1
 ```
 ## Additional notes
 

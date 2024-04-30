@@ -7,18 +7,21 @@
  */
 
 #if defined(HAVE_MPI)
-  #include "mpi.h"
+#include "mpi.h"
 #endif
 
 #if defined(HAVE_CUDA)
-  #include "arch_cuda.h"
+#include "arch_cuda.h"
 #elif defined(HAVE_HIP)
-  #include "arch_hip.h"
+#include "arch_hip.h"
+#elif defined(HAVE_KOKKOS)
+#include "arch_kokkos.h"
 #else
-  #include "arch_host.h"
+#include "arch_host.h"
 #endif
 
-namespace comms{
+namespace comms
+{
   int get_procs();
   int get_rank();
   int get_node_procs();
@@ -26,10 +29,10 @@ namespace comms{
 
   void barrier_procs();
   void reduce_procs(float *sbuf, int count);
-  
+
   void init_procs(int *argc, char **argv[]);
   void finalize_procs();
-  
+
 }
 
 #endif // !BESSEL_COMMS_H

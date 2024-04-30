@@ -23,6 +23,47 @@ CXXDEFS = -DHAVE_HIP
 CXXFLAGS = -g -O3 --offload-arch=gfx90a -I/opt/rocm/hiprand/include/ -I/opt/rocm/rocrand/include/
 EXE = bessel
 
+else ifeq ($(KOKKOS),CUDA)
+
+# Inputs for Makefile.kokkos
+KOKKOS_PATH = $(shell pwd)/kokkos
+CXX = ${KOKKOS_PATH}/bin/nvcc_wrapper
+CXXFLAGS = -g -O3
+KOKKOS_DEVICES = "CUDA"
+KOKKOS_ARCH = "AMPERE80"
+include $(KOKKOS_PATH)/Makefile.kokkos
+# Other
+CLEAN = kokkos-clean
+CXXDEFS = -DHAVE_KOKKOS
+EXE = bessel
+
+else ifeq ($(KOKKOS),ROCM)
+
+# Inputs for Makefile.kokkos
+KOKKOS_PATH = $(shell pwd)/kokkos
+CXX = hipcc
+CXXFLAGS = -g -O3
+KOKKOS_DEVICES = "HIP"
+KOKKOS_ARCH = "VEGA90A"
+include $(KOKKOS_PATH)/Makefile.kokkos
+# Other
+CLEAN = kokkos-clean
+CXXDEFS = -DHAVE_KOKKOS
+EXE = bessel
+
+else ifeq ($(KOKKOS),OPENMP)
+
+# Inputs for Makefile.kokkos
+KOKKOS_PATH = $(shell pwd)/kokkos
+CXX = g++
+CXXFLAGS = -g -O3
+KOKKOS_DEVICES = "OPENMP"
+include $(KOKKOS_PATH)/Makefile.kokkos
+# Other
+CLEAN = kokkos-clean
+CXXDEFS = -DHAVE_KOKKOS
+EXE = bessel
+
 else
 
 CXX = g++
@@ -79,12 +120,13 @@ depend:
 test: $(EXE)
 	./$(EXE)
 
-$(EXE): $(OBJECTS)
-	$(MPICXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(EXE)
+# KOKKOS_DEFINITIONS are outputs from Makefile.kokkos 
+$(EXE): $(OBJECTS) $(KOKKOS_LINK_DEPENDS)
+	$(MPICXX) $(LDFLAGS) $(OBJECTS) $(LIBS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -o $(EXE)
 
 clean: $(CLEAN)
-	rm -f $(OBJECTS) $(EXE)
+	rm -rf $(OBJECTS) $(EXE) *.o *.tmp Kokkos* libkokkos.a desul
 
 # Compilation rules
-$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp
-	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) -c $< -o $(SRC_PATH)$(notdir $@)
+$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(KOKKOS_CPP_DEPENDS)
+	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $(SRC_PATH)$(notdir $@)

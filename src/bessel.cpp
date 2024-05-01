@@ -49,9 +49,6 @@ int main(int argc, char *argv[])
     /* Make sure the seed type is compatible with the chosen backend */
     auto seed_state = arch::random_state_seed(master_seed);
 
-    /* The clone is need by Kokkos to get identical random values twice */
-    auto seed_state_clone = arch::random_state_seed(master_seed);
-
     /* Run the loop over iterations */
     arch::parallel_reduce(
         N_ITER, mse,
@@ -59,54 +56,38 @@ int main(int argc, char *argv[])
           unsigned long long pos = (unsigned long long)iter * (unsigned long long)N_POPU;
           /* Calculate the mean of the population and the sample */
           float p_mean = 0.0f;
+          float p_squared = 0.0f;
           float s_mean = 0.0f;
+          float s_squared = 0.0f;
           {
             auto state = arch::random_state_init(seed_state, iter, pos);
             for (unsigned int i = 0; i < N_POPU; ++i)
             {
               float rnd_val = arch::random_float(state, 100.0f, 15.0f);
               p_mean += rnd_val;
+              p_squared += rnd_val * rnd_val;
               if (i < N_SAMPLE)
+              {
                 s_mean += rnd_val;
+                s_squared += rnd_val * rnd_val;
+              }
               if (iter < 1 && i < 3)
                 printf("Rank %u, iter: %u ,rnd_val[%u]: %.5f \n", my_rank, iter, i, rnd_val);
             }
             arch::random_state_free(seed_state, state);
           }
-
           p_mean /= N_POPU;
           s_mean /= N_SAMPLE;
 
-          /* Calculate the variance for the population */
-          float b_var[n_beta];
-          float b_sum = 0.0f;
-          float p_var = 0.0f;
-
-          {
-            auto state = arch::random_state_init(seed_state_clone, iter, pos);
-            for (unsigned int i = 0; i < N_POPU; ++i)
-            {
-              float rnd_val = arch::random_float(state, 100.0f, 15.0f);
-              float p_diff = rnd_val - p_mean;
-              p_var += p_diff * p_diff;
-              if (i < N_SAMPLE)
-              {
-                float b_diff = rnd_val - s_mean;
-                b_sum += b_diff * b_diff;
-              }
-              if (iter < 1 && i < 3)
-                printf(" Rank %u, iter: %u, rnd_val[%u]: %.5f? \n", my_rank, iter, i, rnd_val);
-            }
-            arch::random_state_free(seed_state_clone, state);
-          }
-
-          p_var /= N_POPU;
+          /* Calculate the variance for the population and sum for the sample */
+          float p_var = (p_squared - N_POPU * p_mean * p_mean) / N_POPU;
+          float b_sum = s_squared - N_SAMPLE * s_mean * s_mean;
           // printf("p_var: %f\n",p_var);
 
           /* Calculate the mean squared error in the sample standard deviation and variance for different beta */
+          float b_var[n_beta];
           float *mse_stdev = &lmse[0];
           float *mse_var = &lmse[n_beta];
-
           for (unsigned int j = 0; j < n_beta; ++j)
           {
             float sub = j * (range_beta / n_beta) - range_beta / 2.0f;

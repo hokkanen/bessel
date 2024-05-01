@@ -47,25 +47,31 @@ int main(int argc, char *argv[])
     unsigned long long master_seed = dist(mt);
 
     /* Make sure the seed type is compatible with the chosen backend */
-    auto seed = arch::seed(master_seed);
+    auto seed_state = arch::random_state_seed(master_seed);
+
+    /* The clone is need by Kokkos to get identical random values twice */
+    auto seed_state_clone = arch::random_state_seed(master_seed);
 
     /* Run the loop over iterations */
     arch::parallel_reduce(
         N_ITER, mse,
         ARCH_LOOP_LAMBDA(const unsigned int iter, float *lmse) {
+          unsigned long long pos = (unsigned long long)iter * (unsigned long long)N_POPU;
           /* Calculate the mean of the population and the sample */
           float p_mean = 0.0f;
           float s_mean = 0.0f;
-
-          for (unsigned int i = 0; i < N_POPU; ++i)
           {
-            unsigned long long seq = ((unsigned long long)iter * (unsigned long long)N_POPU) + (unsigned long long)i;
-            float rnd_val = arch::random_float(seed, seq, i, 100.0f, 15.0f);
-            p_mean += rnd_val;
-            if (i < N_SAMPLE)
-              s_mean += rnd_val;
-            if (iter == 0 && i < 3)
-              printf("Rank %u, rnd_val[%u]: %.5f \n", my_rank, i, rnd_val);
+            auto state = arch::random_state_init(seed_state, iter, pos);
+            for (unsigned int i = 0; i < N_POPU; ++i)
+            {
+              float rnd_val = arch::random_float(state, 100.0f, 15.0f);
+              p_mean += rnd_val;
+              if (i < N_SAMPLE)
+                s_mean += rnd_val;
+              if (iter < 1 && i < 3)
+                printf("Rank %u, iter: %u ,rnd_val[%u]: %.5f \n", my_rank, iter, i, rnd_val);
+            }
+            arch::random_state_free(seed_state, state);
           }
 
           p_mean /= N_POPU;
@@ -76,19 +82,24 @@ int main(int argc, char *argv[])
           float b_sum = 0.0f;
           float p_var = 0.0f;
 
-          for (unsigned int i = 0; i < N_POPU; ++i)
           {
-            unsigned long long seq = ((unsigned long long)iter * (unsigned long long)N_POPU) + (unsigned long long)i;
-            float rnd_val = arch::random_float(seed, seq, i, 100.0f, 15.0f);
-            float p_diff = rnd_val - p_mean;
-            p_var += p_diff * p_diff;
-            if (i < N_SAMPLE)
+            auto state = arch::random_state_init(seed_state_clone, iter, pos);
+            for (unsigned int i = 0; i < N_POPU; ++i)
             {
-              float b_diff = rnd_val - s_mean;
-              b_sum += b_diff * b_diff;
+              float rnd_val = arch::random_float(state, 100.0f, 15.0f);
+              float p_diff = rnd_val - p_mean;
+              p_var += p_diff * p_diff;
+              if (i < N_SAMPLE)
+              {
+                float b_diff = rnd_val - s_mean;
+                b_sum += b_diff * b_diff;
+              }
+              if (iter < 1 && i < 3)
+                printf(" Rank %u, iter: %u, rnd_val[%u]: %.5f? \n", my_rank, iter, i, rnd_val);
             }
-            // if(iter == 0 && i < 3) printf("Rank %u, rnd_val[%u]: %.5f? \n", my_rank, i, rnd_val);
+            arch::random_state_free(seed_state_clone, state);
           }
+
           p_var /= N_POPU;
           // printf("p_var: %f\n",p_var);
 

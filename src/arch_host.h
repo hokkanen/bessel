@@ -61,34 +61,49 @@ namespace arch
     *array_loc += value;
   }
 
-  /* Aux function to make sure the seed is of right type */
+  /* A function to make sure the seed is of right type */
   template <typename T>
-  static unsigned long long seed(T seed)
+  static unsigned long long random_state_seed(T& seed)
   {
     return (unsigned long long)seed;
   }
 
-/* A function for getting a random float from the standard distribution */
+  /* A function for initializing a random number generator state */
 #pragma omp declare target
   template <typename T>
-  inline static T random_float(unsigned long long seed, unsigned long long seq, unsigned int idx, T mean, T stdev)
+  inline static auto random_state_init(T& seed, unsigned int iter, unsigned long long pos)
+  {
+#if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
+    /* curand_init() reproduces the same random number with the same seed and pos */
+    curandStatePhilox4_32_10_t state;
+    curand_init(seed, pos, 0, &state);
+    return state;
+#else
+    /* Re-seed the first case (overflow is defined behavior with unsigned, and ok here) */
+    srand((unsigned int)seed + (unsigned int)pos);
+    return 0;
+#endif
+  }
+
+  /* A function for freeing a random number generator state (not needed by host) */
+#pragma omp declare target
+  template <typename T, typename T2>
+  inline static void random_state_free(T& seed, T2& generator)
+  {
+    (void)seed;
+    (void)generator;
+  }
+
+/* A function for getting a random float from the standard distribution */
+#pragma omp declare target
+  template <typename T, typename T2>
+  inline static T random_float(T2& state, T mean, T stdev)
   {
     T z0 = 0;
 #if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
-    curandStatePhilox4_32_10_t state;
-
-    /* curand_init() reproduces the same random number with the same seed and seq */
-    curand_init(seed, seq, 0, &state);
-
     /* curand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1 */
     z0 = stdev * curand_normal(&state) + mean;
 #else
-    /* Re-seed the first case */
-    if (idx == 0)
-    {
-      /* Overflow is defined behavior with unsigned, and therefore ok here */
-      srand((unsigned int)seed + (unsigned int)seq);
-    }
     /* Use Box Muller algorithm to get a float from a normal distribution */
     const float two_pi = 2.0f * M_PI;
     const float u1 = (float)rand() / (float)RAND_MAX;
@@ -102,7 +117,6 @@ namespace arch
     return z0;
   }
 #pragma omp end declare target
-
   /* Parallel for driver function for the host loops */
   template <typename Lambda>
   inline static void parallel_for(unsigned int loop_size, Lambda loop_body)

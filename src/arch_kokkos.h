@@ -53,29 +53,40 @@ namespace arch
         Kokkos::atomic_add(aux_sumay_loc, value);
     }
 
-    /* Aux function to make sure the seed is of right type (setup Kokkos rng) */
+    /* A function to make sure the seed is of right type (rng pool for Kokkos) */
     template <typename T>
-    static Kokkos::Random_XorShift64_Pool<> seed(T seed)
+    static auto random_state_seed(T& seed)
     {
-        return Kokkos::Random_XorShift64_Pool<>(seed);
+        Kokkos::Random_XorShift64_Pool<> rng_pool;
+        rng_pool.init(seed, Kokkos::DefaultExecutionSpace().concurrency());
+        return rng_pool;
+    }
+
+    /* A function for initializing a random number generator state */
+    template <typename T>
+    KOKKOS_INLINE_FUNCTION static auto random_state_init(T& seed, unsigned int iter, unsigned long long pos)
+    {
+        int state = (int)iter % (int)Kokkos::DefaultExecutionSpace().concurrency();
+        return seed.get_state(state);
+    }
+
+    /* A function for freeing a random number generator state */
+    template <typename T, typename T2>
+    KOKKOS_INLINE_FUNCTION static void random_state_free(T& seed, T2& generator)
+    {
+        seed.free_state(generator);
     }
 
     /* A function for getting a random float from the standard distribution */
     template <typename T, typename T2>
-    KOKKOS_INLINE_FUNCTION static T random_float(T2 rng_pool, unsigned long long seq, unsigned int idx, T mean, T stdev)
+    KOKKOS_INLINE_FUNCTION static T random_float(T2& generator, T mean, T stdev)
     {
-        // Acquire the state of the random number generator engine
-        auto generator = rng_pool.get_state();
-
         /* Use Box Muller algorithm to get a float from a normal distribution */
         const float two_pi = 2.0f * M_PI;
         const float u1 = generator.frand(0., 1.);
         const float u2 = generator.frand(0., 1.);
         const float factor = stdev * sqrtf(-2.0f * logf(u1));
         const float trig_arg = two_pi * u2;
-
-        // Release the state of the engine
-        rng_pool.free_state(generator);
 
         /* Box Muller algorithm produces two random normally distributed floats, z0 and z1 */
         T z0 = factor * cosf(trig_arg) + mean; /* Need only one */

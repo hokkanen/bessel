@@ -2,8 +2,8 @@
 #define BESSEL_COMMS_H
 
 /* HAVE_MPI is set during compile
- * time and determines whether the  
- * program is compiled with MPI or not 
+ * time and determines whether the
+ * program is compiled with MPI or not
  */
 
 #if defined(HAVE_MPI)

@@ -29,13 +29,13 @@ namespace arch
     /* Device function for memory allocation */
     inline static void *allocate(size_t bytes)
     {
-        return Kokkos::kokkos_malloc(bytes);
+        return Kokkos::kokkos_malloc<Kokkos::SharedSpace>(bytes);
     }
 
     /* Device function for memory deallocation */
     inline static void free(void *ptr)
     {
-        Kokkos::kokkos_free(ptr);
+        Kokkos::kokkos_free<Kokkos::SharedSpace>(ptr);
     }
 
     /* Device-to-device memory copy */
@@ -48,14 +48,14 @@ namespace arch
 
     /* Atomic add function for both host and device use */
     template <typename T>
-    KOKKOS_INLINE_FUNCTION static void atomic_add(T *aux_sumay_loc, T value)
+    KOKKOS_INLINE_FUNCTION static void atomic_add(T *array_loc, T value)
     {
-        Kokkos::atomic_add(aux_sumay_loc, value);
+        Kokkos::atomic_add(array_loc, value);
     }
 
-    /* A function to make sure the seed is of right type (rng pool for Kokkos) */
+    /* A function to make sure the seed is of right type (returns rng pool for Kokkos) */
     template <typename T>
-    inline static auto random_state_seed(T& seed)
+    inline static auto random_state_seed(T &seed)
     {
         Kokkos::Random_XorShift64_Pool<> rng_pool(seed);
         return rng_pool;
@@ -63,21 +63,21 @@ namespace arch
 
     /* A function for initializing a random number generator state */
     template <typename T>
-    KOKKOS_INLINE_FUNCTION static auto random_state_init(T& seed, unsigned long long pos)
+    KOKKOS_INLINE_FUNCTION static auto random_state_init(T &seed, unsigned long long pos)
     {
         return seed.get_state();
     }
 
     /* A function for freeing a random number generator state */
     template <typename T, typename T2>
-    KOKKOS_INLINE_FUNCTION static void random_state_free(T& seed, T2& generator)
+    KOKKOS_INLINE_FUNCTION static void random_state_free(T &seed, T2 &generator)
     {
         seed.free_state(generator);
     }
 
     /* A function for getting a random float from the standard distribution */
     template <typename T, typename T2>
-    KOKKOS_INLINE_FUNCTION static T random_float(T2& generator, T mean, T stdev)
+    KOKKOS_INLINE_FUNCTION static T random_float(T2 &generator, T mean, T stdev)
     {
         /* Use Box Muller algorithm to get a float from a normal distribution */
         const float two_pi = 2.0f * M_PI;
@@ -92,7 +92,7 @@ namespace arch
         return z0;
     }
 
-    /* Parallel for driver function for the CUDA loops */
+    /* Parallel for driver function for the Kokkos loops */
     template <typename Lambda>
     inline static void parallel_for(unsigned int loop_size, Lambda loop_body)
     {
@@ -100,21 +100,21 @@ namespace arch
         Kokkos::fence();
     }
 
-    /* Aux struct to perform reductions with Kokkos */
+    /* Aux struct to perform reductions into an array with Kokkos */
     template <size_t N>
     struct AuxReducer
     {
         float values[N];
         KOKKOS_INLINE_FUNCTION void operator+=(AuxReducer const &other)
         {
-            for (int i = 0; i < N; ++i)
+            for (unsigned i = 0; i < N; ++i)
             {
                 values[i] += other.values[i];
             }
         }
     };
 
-    /* Parallel reduce driver function for the CUDA reductions */
+    /* Parallel reduce driver function for the Kokkos reductions */
     template <unsigned int NReductions, typename Lambda, typename T>
     inline static void parallel_reduce(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
     {
@@ -124,7 +124,7 @@ namespace arch
             aux_sum.values[i] = sum[i];
 
         // Create a wrapper lambda that takes in AuxReducer
-        auto lambda_wrapper = [=](const unsigned int iter, AuxReducer<NReductions> &laux_sum)
+        auto lambda_wrapper = KOKKOS_LAMBDA(const unsigned int iter, AuxReducer<NReductions> &laux_sum)
         {
             loop_body(iter, &(laux_sum.values[0]));
         };

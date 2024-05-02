@@ -3,7 +3,7 @@
 
 #if defined(HAVE_MPI)
 
-/* Namespace for the communication functions */
+/* Namespace for the communication functions with MPI */
 namespace comms
 {
 
@@ -104,7 +104,7 @@ namespace comms
 
 #else
 
-/* Namespace for the communication functions */
+/* Namespace for the communication functions without MPI */
 namespace comms
 {
   int get_procs()

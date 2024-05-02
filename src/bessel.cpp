@@ -9,7 +9,7 @@
 #include "./comms.h"
 #include "./arch/arch_api.h"
 
-/* Use matplusplusplus optionally for plotting */
+/* Use matplotplusplus optionally for plotting */
 #ifdef HAVE_MATPLOT
 #include <matplot/matplot.h>
 #endif
@@ -23,10 +23,10 @@ int main(int argc, char *argv[])
 {
   /* Initialize processes and devices */
   comms::init_procs(&argc, &argv);
-  const unsigned int my_rank = comms::get_rank();
+  const unsigned my_rank = comms::get_rank();
   {
     /* Set spacing and range for beta */
-    constexpr unsigned int n_beta = 40;
+    constexpr unsigned n_beta = 40;
     constexpr float range_beta = 4.0f;
 
     /* Set timer */
@@ -53,16 +53,16 @@ int main(int argc, char *argv[])
     /* Run the loop over iterations */
     arch::parallel_reduce(
         N_ITER, mse,
-        ARCH_LOOP_LAMBDA(const unsigned int iter, float *lmse) {
+        ARCH_LOOP_LAMBDA(const unsigned iter, float *lmse) {
           unsigned long long pos = (unsigned long long)iter * (unsigned long long)N_POPU;
-          /* Calculate the mean of the population and the sample */
+          /* Calculate the mean and the squared sum of the population and the sample */
           float p_mean = 0.0f;
           float p_squared = 0.0f;
           float s_mean = 0.0f;
           float s_squared = 0.0f;
           {
             auto state = arch::random_state_init(seed_state, pos);
-            for (unsigned int i = 0; i < N_POPU; ++i)
+            for (unsigned i = 0; i < N_POPU; ++i)
             {
               float rnd_val = arch::random_float(state, 100.0f, 15.0f);
               p_mean += rnd_val;
@@ -80,22 +80,22 @@ int main(int argc, char *argv[])
           p_mean /= N_POPU;
           s_mean /= N_SAMPLE;
 
-          /* Calculate the variance for the population and sum for the sample */
+          /* Calculate variance for the population and sum for the sample */
           float p_var = (p_squared - N_POPU * p_mean * p_mean) / N_POPU;
-          float b_sum = s_squared - N_SAMPLE * s_mean * s_mean;
+          float s_sum = s_squared - N_SAMPLE * s_mean * s_mean;
           // printf("p_var: %f\n",p_var);
 
           /* Calculate the mean squared error in the sample standard deviation and variance for different beta */
-          float b_var[n_beta];
+          float s_var[n_beta];
           float *mse_stdev = &lmse[0];
           float *mse_var = &lmse[n_beta];
-          for (unsigned int j = 0; j < n_beta; ++j)
+          for (unsigned j = 0; j < n_beta; ++j)
           {
             float sub = j * (range_beta / n_beta) - range_beta / 2.0f;
-            b_var[j] = b_sum / (N_SAMPLE - sub);
-            float diff_stdev = sqrtf(p_var) - sqrtf(b_var[j]);
-            float diff_var = p_var - b_var[j];
-            // printf("b_var[%u]: %f, error[iter: %u][sub: %f]: %f\n", j, b_var[j], iter, sub, sqrt(diff_var * diff_var));
+            s_var[j] = s_sum / (N_SAMPLE - sub);
+            float diff_stdev = sqrtf(p_var) - sqrtf(s_var[j]);
+            float diff_var = p_var - s_var[j];
+            // printf("s_var[%u]: %f, error[iter: %u][sub: %f]: %f\n", j, s_var[j], iter, sub, sqrt(diff_var * diff_var));
 
             /* Sum the errors of each iteration */
             mse_stdev[j] += diff_stdev * diff_stdev;
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     {
       float *mse_stdev = &mse[0];
       float *mse_var = &mse[n_beta];
-      for (unsigned int j = 0; j < n_beta; ++j)
+      for (unsigned j = 0; j < n_beta; ++j)
       {
         mse_stdev[j] /= (comms::get_procs() * N_ITER);
         mse_var[j] /= (comms::get_procs() * N_ITER);

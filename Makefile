@@ -6,14 +6,14 @@ ifeq ($(CUDA),1)
 
 CXX = nvcc
 CXXDEFS = -DHAVE_CUDA
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80
+CXXFLAGS = -g -O3 -x=cu -extended-lambda -gencode=arch=compute_80,code=sm_80
 EXE = bessel
 
 else ifeq ($(HIP),CUDA)
 
 CXX = hipcc
 CXXDEFS = -DHAVE_HIP
-CXXFLAGS = -g -O3 --x=cu --extended-lambda -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80 -I$(shell pwd)/hiprand -I$(shell pwd)/
+CXXFLAGS = -g -O3 -x=cu -extended-lambda -gencode=arch=compute_80,code=sm_80
 EXE = bessel
 
 else ifeq ($(HIP),ROCM)
@@ -28,7 +28,7 @@ else ifeq ($(KOKKOS),CUDA)
 # Inputs for Makefile.kokkos
 KOKKOS_PATH = $(shell pwd)/kokkos
 CXX = ${KOKKOS_PATH}/bin/nvcc_wrapper
-CXXFLAGS = -g -O3
+CXXFLAGS = -g -O3 -extended-lambda
 KOKKOS_DEVICES = "CUDA"
 KOKKOS_ARCH = "AMPERE80"
 include $(KOKKOS_PATH)/Makefile.kokkos
@@ -67,7 +67,7 @@ EXE = bessel
 else ifeq ($(OMP),CUDA)
 
 CXX = nvc++
-CXXFLAGS = -g -O3 -mp=gpu
+CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80
 EXE = bessel
 
 else
@@ -89,13 +89,15 @@ LIBS += -lmatplot -ljpeg -ltiff -lz -lpng -lnodesoup
 endif
 
 # Message passing protocol
-ifeq ($(MPI),1)
+ifeq ($(MPI),MAHTI)
 
-# On Puhti
-# MPICXX = mpicxx
-# MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
-# LDFLAGS += -L${CUDA_PATH}/lib64
-# LIBS += -lcudart
+# On Mahti
+MPICXX = mpicxx
+MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
+LDFLAGS += -L${CUDA_PATH}/lib64
+LIBS += -lcudart
+
+else ifeq ($(MPI),LUMI)
 
 # On Lumi
 MPICXX = CC
@@ -130,12 +132,10 @@ test: $(EXE)
 $(EXE): $(OBJECTS) $(KOKKOS_LINK_DEPENDS)
 	$(MPICXX) $(LDFLAGS) $(OBJECTS) $(LIBS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -o $(EXE)
 
+# Type 'make clean KOKKOS=CUDA' to clean Kokkos stuff as well
 clean: $(CLEAN)
-	rm -rf $(OBJECTS) $(EXE)
-
-kokkos-clean: $(CLEAN)
-	rm -rf $(OBJECTS) $(EXE) *.o *.tmp Kokkos* libkokkos.a desul
+	rm -rf $(OBJECTS) $(EXE) *.tmp desul
 
 # Compilation rules
-$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(KOKKOS_CPP_DEPENDS)
-	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $(SRC_PATH)$(notdir $@)
+$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(SRC_PATH)arch/%.cpp $(KOKKOS_CPP_DEPENDS)
+	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $(OBJ_PATH)$(notdir $@)

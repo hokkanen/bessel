@@ -27,7 +27,12 @@ namespace arch
   /* Host backend finalization */
   inline static void finalize(int rank)
   {
+#ifdef _OPENMP
+    printf("Rank %d, OpenMP (offload) finalized.\n", rank);
+
+#else
     printf("Rank %d, Host finalized.\n", rank);
+#endif
   }
 
   /* Host function for memory allocation */
@@ -54,16 +59,18 @@ namespace arch
   }
 
   /* Atomic add function for host use */
+#pragma omp declare target
   template <typename T>
   inline static void atomic_add(T *array_loc, T value)
   {
 #pragma omp atomic update
     *array_loc += value;
   }
+#pragma omp end declare target
 
   /* A function to make sure the seed is of right type */
   template <typename T>
-  static unsigned long long random_state_seed(T& seed)
+  static unsigned long long random_state_seed(T &seed)
   {
     return (unsigned long long)seed;
   }
@@ -71,7 +78,7 @@ namespace arch
   /* A function for initializing a random number generator state */
 #pragma omp declare target
   template <typename T>
-  inline static auto random_state_init(T& seed, unsigned long long pos)
+  inline static auto random_state_init(T &seed, unsigned long long pos)
   {
 #if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
     /* curand_init() reproduces the same random number with the same seed and pos */
@@ -89,7 +96,7 @@ namespace arch
   /* A function for freeing a random number generator state (not needed by host) */
 #pragma omp declare target
   template <typename T, typename T2>
-  inline static void random_state_free(T& seed, T2& generator)
+  inline static void random_state_free(T &seed, T2 &generator)
   {
     (void)seed;
     (void)generator;
@@ -99,7 +106,7 @@ namespace arch
 /* A function for getting a random float from the standard distribution */
 #pragma omp declare target
   template <typename T, typename T2>
-  inline static T random_float(T2& state, T mean, T stdev)
+  inline static T random_float(T2 &state, T mean, T stdev)
   {
     T z0 = 0;
 #if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
@@ -119,10 +126,12 @@ namespace arch
     return z0;
   }
 #pragma omp end declare target
+
   /* Parallel for driver function for the host loops */
   template <typename Lambda>
   inline static void parallel_for(unsigned int loop_size, Lambda loop_body)
   {
+    /* Execute the standard for loop */
 #pragma omp target teams distribute parallel for
     for (unsigned int i = 0; i < loop_size; i++)
     {
@@ -134,10 +143,13 @@ namespace arch
   template <unsigned int NReductions, typename Lambda, typename T>
   inline static void parallel_reduce(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
   {
-#pragma omp target teams distribute parallel for reduction(+ : sum[0 : NReductions])
+    /* Introduce aux pointer to avoid nvc++ (24.3-0) omp offload compile crash */
+    T *aux_sum = &(sum[0]);
+    /* Execute the reduction loop */
+#pragma omp target teams distribute parallel for reduction(+ : aux_sum[0 : NReductions])
     for (unsigned int i = 0; i < loop_size; i++)
     {
-      loop_body(i, sum);
+      loop_body(i, aux_sum);
     }
   }
 }

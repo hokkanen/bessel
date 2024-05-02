@@ -75,14 +75,14 @@ namespace arch
 
   /* A function to make sure the seed is of right type */
   template <typename T>
-  __forceinline__ static unsigned long long random_state_seed(T& seed)
+  __forceinline__ static unsigned long long random_state_seed(T &seed)
   {
     return (unsigned long long)seed;
   }
 
   /* A function for initializing a random number generator state */
   template <typename T>
-    __host__ __device__ __forceinline__ static auto random_state_init(T& seed, unsigned long long pos)
+  __host__ __device__ __forceinline__ static auto random_state_init(T &seed, unsigned long long pos)
   {
     hiprandStatePhilox4_32_10_t state;
 #if __HIP_DEVICE_COMPILE__
@@ -92,17 +92,17 @@ namespace arch
     return state;
   }
 
-  /* A function for freeing a random number generator state (not needed by host) */
+  /* A function for freeing a random number generator state (not needed by HIP) */
   template <typename T, typename T2>
-    __host__ __device__ __forceinline__ static void random_state_free(T& seed, T2& generator)
+  __host__ __device__ __forceinline__ static void random_state_free(T &seed, T2 &generator)
   {
     (void)seed;
     (void)generator;
   }
 
   /* A function for getting a random float from the standard distribution */
-template <typename T, typename T2>
-  __host__ __device__ __forceinline__  static T random_float(T2& state, T mean, T stdev)
+  template <typename T, typename T2>
+  __host__ __device__ __forceinline__ static T random_float(T2 &state, T mean, T stdev)
   {
     T var = 0;
 #if __HIP_DEVICE_COMPILE__

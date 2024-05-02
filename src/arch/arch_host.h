@@ -87,7 +87,7 @@ namespace arch
     return state;
 #else
     /* Re-seed the first case (overflow is defined behavior with unsigned, and ok here) */
-    srand((unsigned int)seed + (unsigned int)pos);
+    srand((unsigned)seed + (unsigned)pos);
     return 0;
 #endif
   }
@@ -108,7 +108,7 @@ namespace arch
   template <typename T, typename T2>
   inline static T random_float(T2 &state, T mean, T stdev)
   {
-    T z0 = 0;
+    float z0 = 0;
 #if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
     /* curand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1 */
     z0 = stdev * curand_normal(&state) + mean;
@@ -123,31 +123,31 @@ namespace arch
     z0 = factor * cosf(trig_arg) + mean; /* Need only one */
                                          // float z1 = factor * sinf (trig_arg) + mean;
 #endif
-    return z0;
+    return (T)z0;
   }
 #pragma omp end declare target
 
   /* Parallel for driver function for the host loops */
   template <typename Lambda>
-  inline static void parallel_for(unsigned int loop_size, Lambda loop_body)
+  inline static void parallel_for(unsigned loop_size, Lambda loop_body)
   {
     /* Execute the standard for loop */
 #pragma omp target teams distribute parallel for
-    for (unsigned int i = 0; i < loop_size; i++)
+    for (unsigned i = 0; i < loop_size; i++)
     {
       loop_body(i);
     }
   }
 
   /* Parallel reduce driver function for the host reductions */
-  template <unsigned int NReductions, typename Lambda, typename T>
-  inline static void parallel_reduce(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
+  template <unsigned NReductions, typename Lambda, typename T>
+  inline static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
   {
     /* Introduce aux pointer to avoid nvc++ (24.3-0) omp offload compile crash */
     T *aux_sum = &(sum[0]);
     /* Execute the reduction loop */
 #pragma omp target teams distribute parallel for reduction(+ : aux_sum[0 : NReductions])
-    for (unsigned int i = 0; i < loop_size; i++)
+    for (unsigned i = 0; i < loop_size; i++)
     {
       loop_body(i, aux_sum);
     }

@@ -87,14 +87,14 @@ namespace arch
         const float trig_arg = two_pi * u2;
 
         /* Box Muller algorithm produces two random normally distributed floats, z0 and z1 */
-        T z0 = factor * cosf(trig_arg) + mean; /* Need only one */
+        float z0 = factor * cosf(trig_arg) + mean; /* Need only one */
         // float z1 = factor * sinf (trig_arg) + mean;
-        return z0;
+        return (T)z0;
     }
 
     /* Parallel for driver function for the Kokkos loops */
     template <typename Lambda>
-    inline static void parallel_for(unsigned int loop_size, Lambda loop_body)
+    inline static void parallel_for(unsigned loop_size, Lambda loop_body)
     {
         Kokkos::parallel_for(loop_size, loop_body);
         Kokkos::fence();
@@ -115,8 +115,8 @@ namespace arch
     };
 
     /* Parallel reduce driver function for the Kokkos reductions */
-    template <unsigned int NReductions, typename Lambda, typename T>
-    inline static void parallel_reduce(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
+    template <unsigned NReductions, typename Lambda, typename T>
+    inline static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
     {
         // Copy initial values to the AuxReducer object
         AuxReducer<NReductions> aux_sum;
@@ -124,7 +124,7 @@ namespace arch
             aux_sum.values[i] = sum[i];
 
         // Create a wrapper lambda that takes in AuxReducer
-        auto lambda_wrapper = KOKKOS_LAMBDA(const unsigned int iter, AuxReducer<NReductions> &laux_sum)
+        auto lambda_wrapper = KOKKOS_LAMBDA(const unsigned iter, AuxReducer<NReductions> &laux_sum)
         {
             loop_body(iter, &(laux_sum.values[0]));
         };

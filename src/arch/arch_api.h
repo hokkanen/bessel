@@ -1,5 +1,5 @@
-#ifndef ARCH_API_H
-#define ARCH_API_H
+#ifndef BESSEL_ARCH_API_H
+#define BESSEL_ARCH_API_H
 
 /* Each HAVE_DEF is set during compile time
  * and determine which dependencies are used
@@ -16,4 +16,4 @@
 #include "arch_host.h"
 #endif
 
-#endif // !ARCH_API_H
+#endif // !BESSEL_ARCH_API_H

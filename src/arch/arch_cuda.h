@@ -114,9 +114,9 @@ namespace arch
 
   /* A general device kernel for simple for-loops */
   template <typename Lambda>
-  __global__ static void for_kernel(Lambda lambda, const unsigned int loop_size)
+  __global__ static void for_kernel(Lambda lambda, const unsigned loop_size)
   {
-    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < loop_size)
     {
       lambda(i);
@@ -124,8 +124,8 @@ namespace arch
   }
 
   /* A general device kernel for reductions */
-  template <unsigned int NReductions, typename Lambda, typename T>
-  __global__ static void reduction_kernel(Lambda loop_body, T *rslt, const unsigned int n_total)
+  template <unsigned NReductions, typename Lambda, typename T>
+  __global__ static void reduction_kernel(Lambda loop_body, T *rslt, const unsigned n_total)
   {
     /* Specialize BlockReduce for a 1D block of ARCH_BLOCKSIZE_R threads of type `T` */
     typedef cub::BlockReduce<T, ARCH_BLOCKSIZE> BlockReduce;
@@ -137,14 +137,14 @@ namespace arch
     T thread_data[NReductions] = {0};
 
     /* Get the global 1D thread index */
-    const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     /* Check the loop limits and evaluate the loop body */
     if (idx < n_total)
       loop_body(idx, thread_data);
 
     /* Perform reductions */
-    for (unsigned int i = 0; i < NReductions; i++)
+    for (unsigned i = 0; i < NReductions; i++)
     {
       /* Compute the block-wide sum for thread 0 which stores it */
       T aggregate = BlockReduce(temp_storage[i]).Sum(thread_data[i]);
@@ -156,22 +156,22 @@ namespace arch
 
   /* Parallel for driver function for the CUDA loops */
   template <typename Lambda>
-  __forceinline__ static void parallel_for(unsigned int loop_size, Lambda loop_body)
+  __forceinline__ static void parallel_for(unsigned loop_size, Lambda loop_body)
   {
-    const unsigned int blocksize = ARCH_BLOCKSIZE;
-    const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;
+    const unsigned blocksize = ARCH_BLOCKSIZE;
+    const unsigned gridsize = (loop_size - 1 + blocksize) / blocksize;
     for_kernel<<<gridsize, blocksize>>>(loop_body, loop_size);
     CUDA_ERR(cudaStreamSynchronize(0));
   }
 
   /* Parallel reduce driver function for the CUDA reductions */
-  template <unsigned int NReductions, typename Lambda, typename T>
-  __forceinline__ static void parallel_reduce(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
+  template <unsigned NReductions, typename Lambda, typename T>
+  __forceinline__ static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
   {
 
     /* Set the kernel dimensions */
-    const unsigned int blocksize = ARCH_BLOCKSIZE;
-    const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;
+    const unsigned blocksize = ARCH_BLOCKSIZE;
+    const unsigned gridsize = (loop_size - 1 + blocksize) / blocksize;
 
     /* Create a device buffer for the reduction results */
     T *d_buf;

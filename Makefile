@@ -137,5 +137,5 @@ clean: $(CLEAN)
 	rm -rf $(OBJECTS) $(EXE) *.tmp desul
 
 # Compilation rules
-$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(SRC_PATH)arch/%.cpp $(KOKKOS_CPP_DEPENDS)
+$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(SRC_PATH)arch/%.h $(KOKKOS_CPP_DEPENDS)
 	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $(OBJ_PATH)$(notdir $@)

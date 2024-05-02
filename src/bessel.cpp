@@ -21,9 +21,11 @@
 
 int main(int argc, char *argv[])
 {
-  /* Initialize processes and devices */
+  /* Initialize processes */
   comms::init_procs(&argc, &argv);
-  const unsigned my_rank = comms::get_rank();
+  /* Initialize devices */
+  arch::init(comms::get_node_rank());
+  const unsigned my_rank = comms::get_global_rank();
   {
     /* Set spacing and range for beta */
     constexpr unsigned n_beta = 40;
@@ -142,7 +144,9 @@ int main(int argc, char *argv[])
       std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
     }
   }
-  /* Finalize processes and devices */
+  /* Finalize devices */
+  arch::finalize(my_rank);
+  /* Finalize processes */
   comms::finalize_procs();
 
 #ifdef HAVE_MATPLOT

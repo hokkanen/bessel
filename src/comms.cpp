@@ -1,5 +1,4 @@
 #include "./comms.h"
-#include "./arch/arch_api.h"
 
 #if defined(HAVE_MPI)
 
@@ -19,7 +18,7 @@ namespace comms
     return comm_size;
   }
 
-  int get_rank()
+  int get_global_rank()
   {
     int proc_rank = 0;
     if (MPI_INITIALIZED == 1)
@@ -69,10 +68,10 @@ namespace comms
     if (MPI_INITIALIZED == 1)
     {
       float *rbuf;
-      if (get_rank() == 0)
+      if (get_global_rank() == 0)
         rbuf = (float *)malloc(count * sizeof(float));
       MPI_Reduce(sbuf, rbuf, count, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-      if (get_rank() == 0)
+      if (get_global_rank() == 0)
       {
         memcpy(sbuf, rbuf, count * sizeof(float));
         free((void *)rbuf);
@@ -87,15 +86,10 @@ namespace comms
       MPI_Init(argc, argv);
       MPI_INITIALIZED = 1;
     }
-    /* Some device backends require an initialization */
-    arch::init(get_node_rank());
   }
 
   void finalize_procs()
   {
-    /* Some device backends also require a finalization */
-    arch::finalize(get_rank());
-
     /* Finalize MPI if it is used */
     if (MPI_INITIALIZED == 1)
       MPI_Finalize();
@@ -113,7 +107,7 @@ namespace comms
     return comm_size;
   }
 
-  int get_rank()
+  int get_global_rank()
   {
     int proc_rank = 0;
     return proc_rank;
@@ -141,14 +135,10 @@ namespace comms
 
   void init_procs(int *argc, char **argv[])
   {
-    /* Some device backends require an initialization */
-    arch::init(get_node_rank());
   }
 
   void finalize_procs()
   {
-    /* Some device backends also require a finalization */
-    arch::finalize(get_rank());
   }
 }
 

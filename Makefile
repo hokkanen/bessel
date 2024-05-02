@@ -32,6 +32,8 @@ CXXFLAGS = -g -O3 -extended-lambda
 KOKKOS_DEVICES = "CUDA"
 KOKKOS_ARCH = "AMPERE80"
 include $(KOKKOS_PATH)/Makefile.kokkos
+# Remove any ldl flags that do not start with -L
+KOKKOS_LDFLAGS := $(filter -L%,$(KOKKOS_LDFLAGS))
 # Other
 CLEAN = kokkos-clean
 CXXDEFS = -DHAVE_KOKKOS
@@ -46,6 +48,8 @@ CXXFLAGS = -g -O3
 KOKKOS_DEVICES = "HIP"
 KOKKOS_ARCH = "VEGA90A"
 include $(KOKKOS_PATH)/Makefile.kokkos
+# Remove any ldl flags that do not start with -L
+KOKKOS_LDFLAGS := $(filter -L%,$(KOKKOS_LDFLAGS))
 # Other
 CLEAN = kokkos-clean
 CXXDEFS = -DHAVE_KOKKOS
@@ -59,6 +63,8 @@ CXX = g++
 CXXFLAGS = -g -O3
 KOKKOS_DEVICES = "OPENMP"
 include $(KOKKOS_PATH)/Makefile.kokkos
+# Remove any ldl flags that do not start with -L
+KOKKOS_LDFLAGS := $(filter -L%,$(KOKKOS_LDFLAGS))
 # Other
 CLEAN = kokkos-clean
 CXXDEFS = -DHAVE_KOKKOS
@@ -101,7 +107,7 @@ else ifeq ($(MPI),LUMI)
 
 # On Lumi
 MPICXX = CC
-MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++11 -x hip
+MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++17 -x hip
 LDFLAGS += -L${ROCM_PATH}/lib
 LIBS += -lamdhip64
 
@@ -130,12 +136,16 @@ test: $(EXE)
 
 # KOKKOS_DEFINITIONS are outputs from Makefile.kokkos 
 $(EXE): $(OBJECTS) $(KOKKOS_LINK_DEPENDS)
-	$(MPICXX) $(LDFLAGS) $(OBJECTS) $(LIBS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -o $(EXE)
+	$(MPICXX) $(OBJECTS) $(LDFLAGS) $(LIBS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -o $(EXE)
 
 # Type 'make clean KOKKOS=CUDA' to clean Kokkos stuff as well
 clean: $(CLEAN)
 	rm -rf $(OBJECTS) $(EXE) *.tmp desul
 
-# Compilation rules
-$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(HEADERS) $(KOKKOS_CPP_DEPENDS)
-	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $(OBJ_PATH)$(notdir $@)
+# Rule for compiling comms.cpp with $(MPICXX)
+$(OBJ_PATH)comms.o: $(SRC_PATH)comms.cpp $(HEADERS)
+	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) -c $< -o $@
+
+# Rule for compiling other bessel.cpp with $(CXX)
+$(OBJ_PATH)bessel.o: $(SRC_PATH)bessel.cpp $(HEADERS) $(KOKKOS_CPP_DEPENDS)
+	$(CXX) $(CXXDEFS) $(CXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $@

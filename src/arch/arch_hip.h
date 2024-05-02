@@ -73,24 +73,39 @@ namespace arch
 #endif
   }
 
-  /* Aux function to make sure the seed is of right type */
+  /* A function to make sure the seed is of right type */
   template <typename T>
-  static unsigned long long seed(T seed)
+  __forceinline__ static unsigned long long random_state_seed(T& seed)
   {
     return (unsigned long long)seed;
   }
 
-  /* A function for getting a random float from the standard distribution */
+  /* A function for initializing a random number generator state */
   template <typename T>
-  __host__ __device__ __forceinline__ static T random_float(unsigned long long seed, unsigned long long seq, unsigned int idx, T mean, T stdev)
+    __host__ __device__ __forceinline__ static auto random_state_init(T& seed, unsigned long long pos)
+  {
+    hiprandStatePhilox4_32_10_t state;
+#if __HIP_DEVICE_COMPILE__
+    /* hiprand_init() reproduces the same random number with the same seed and pos */
+    hiprand_init(seed, pos, 0, &state);
+#endif
+    return state;
+  }
+
+  /* A function for freeing a random number generator state (not needed by host) */
+  template <typename T, typename T2>
+    __host__ __device__ __forceinline__ static void random_state_free(T& seed, T2& generator)
+  {
+    (void)seed;
+    (void)generator;
+  }
+
+  /* A function for getting a random float from the standard distribution */
+template <typename T, typename T2>
+  __host__ __device__ __forceinline__  static T random_float(T2& state, T mean, T stdev)
   {
     T var = 0;
 #if __HIP_DEVICE_COMPILE__
-    hiprandStatePhilox4_32_10_t state;
-
-    /* hiprand_init() reproduces the same random number with the same seed and seq */
-    hiprand_init(seed, seq, 0, &state);
-
     /* hiprand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1 */
     var = stdev * hiprand_normal(&state) + mean;
 #endif

@@ -51,7 +51,7 @@ CLEAN = kokkos-clean
 CXXDEFS = -DHAVE_KOKKOS
 EXE = bessel
 
-else ifeq ($(KOKKOS),OPENMP)
+else ifeq ($(KOKKOS),OMP)
 
 # Inputs for Makefile.kokkos
 KOKKOS_PATH = $(shell pwd)/kokkos
@@ -62,6 +62,12 @@ include $(KOKKOS_PATH)/Makefile.kokkos
 # Other
 CLEAN = kokkos-clean
 CXXDEFS = -DHAVE_KOKKOS
+EXE = bessel
+
+else ifeq ($(OMP),CUDA)
+
+CXX = nvc++
+CXXFLAGS = -g -O3 -mp=gpu
 EXE = bessel
 
 else
@@ -125,6 +131,9 @@ $(EXE): $(OBJECTS) $(KOKKOS_LINK_DEPENDS)
 	$(MPICXX) $(LDFLAGS) $(OBJECTS) $(LIBS) $(KOKKOS_LDFLAGS) $(KOKKOS_LIBS) -o $(EXE)
 
 clean: $(CLEAN)
+	rm -rf $(OBJECTS) $(EXE)
+
+kokkos-clean: $(CLEAN)
 	rm -rf $(OBJECTS) $(EXE) *.o *.tmp Kokkos* libkokkos.a desul
 
 # Compilation rules

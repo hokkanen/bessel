@@ -1,4 +1,5 @@
-#include "comms.h"
+#include "./comms.h"
+#include "./arch/arch_api.h"
 
 #if defined(HAVE_MPI)
 

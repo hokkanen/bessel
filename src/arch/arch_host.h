@@ -71,7 +71,7 @@ namespace arch
   /* A function for initializing a random number generator state */
 #pragma omp declare target
   template <typename T>
-  inline static auto random_state_init(T& seed, unsigned int iter, unsigned long long pos)
+  inline static auto random_state_init(T& seed, unsigned long long pos)
   {
 #if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
     /* curand_init() reproduces the same random number with the same seed and pos */
@@ -84,6 +84,7 @@ namespace arch
     return 0;
 #endif
   }
+#pragma omp end declare target
 
   /* A function for freeing a random number generator state (not needed by host) */
 #pragma omp declare target
@@ -93,6 +94,7 @@ namespace arch
     (void)seed;
     (void)generator;
   }
+#pragma omp end declare target
 
 /* A function for getting a random float from the standard distribution */
 #pragma omp declare target

@@ -6,7 +6,8 @@
 #include <stdio.h>
 
 /* Namespaces "comms" and "arch" declared here */
-#include "comms.h"
+#include "./comms.h"
+#include "./arch/arch_api.h"
 
 /* Use matplusplusplus optionally for plotting */
 #ifdef HAVE_MATPLOT
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
           float s_mean = 0.0f;
           float s_squared = 0.0f;
           {
-            auto state = arch::random_state_init(seed_state, iter, pos);
+            auto state = arch::random_state_init(seed_state, pos);
             for (unsigned int i = 0; i < N_POPU; ++i)
             {
               float rnd_val = arch::random_float(state, 100.0f, 15.0f);

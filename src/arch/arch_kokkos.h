@@ -13,33 +13,33 @@
 namespace arch
 {
     /* Device backend initialization */
-    static void init(int node_rank)
+    inline static void init(int node_rank)
     {
         Kokkos::initialize(Kokkos::InitializationSettings()
                                .set_device_id(node_rank));
     }
 
     /* Device backend finalization */
-    static void finalize(int rank)
+    inline static void finalize(int rank)
     {
         Kokkos::finalize();
         printf("Rank %d, Kokkos finalized.\n", rank);
     }
 
     /* Device function for memory allocation */
-    static void *allocate(size_t bytes)
+    inline static void *allocate(size_t bytes)
     {
         return Kokkos::kokkos_malloc(bytes);
     }
 
     /* Device function for memory deallocation */
-    static void free(void *ptr)
+    inline static void free(void *ptr)
     {
         Kokkos::kokkos_free(ptr);
     }
 
     /* Device-to-device memory copy */
-    static void memcpy_d2d(void *dst, void *src, size_t bytes)
+    inline static void memcpy_d2d(void *dst, void *src, size_t bytes)
     {
         Kokkos::View<char *> dst_view((char *)dst, bytes);
         Kokkos::View<char *> src_view((char *)src, bytes);
@@ -55,19 +55,17 @@ namespace arch
 
     /* A function to make sure the seed is of right type (rng pool for Kokkos) */
     template <typename T>
-    static auto random_state_seed(T& seed)
+    inline static auto random_state_seed(T& seed)
     {
-        Kokkos::Random_XorShift64_Pool<> rng_pool;
-        rng_pool.init(seed, Kokkos::DefaultExecutionSpace().concurrency());
+        Kokkos::Random_XorShift64_Pool<> rng_pool(seed);
         return rng_pool;
     }
 
     /* A function for initializing a random number generator state */
     template <typename T>
-    KOKKOS_INLINE_FUNCTION static auto random_state_init(T& seed, unsigned int iter, unsigned long long pos)
+    KOKKOS_INLINE_FUNCTION static auto random_state_init(T& seed, unsigned long long pos)
     {
-        int state = (int)iter % (int)Kokkos::DefaultExecutionSpace().concurrency();
-        return seed.get_state(state);
+        return seed.get_state();
     }
 
     /* A function for freeing a random number generator state */
@@ -96,7 +94,7 @@ namespace arch
 
     /* Parallel for driver function for the CUDA loops */
     template <typename Lambda>
-    static void parallel_for(unsigned int loop_size, Lambda loop_body)
+    inline static void parallel_for(unsigned int loop_size, Lambda loop_body)
     {
         Kokkos::parallel_for(loop_size, loop_body);
         Kokkos::fence();
@@ -107,7 +105,7 @@ namespace arch
     struct AuxReducer
     {
         float values[N];
-        void operator+=(AuxReducer const &other)
+        KOKKOS_INLINE_FUNCTION void operator+=(AuxReducer const &other)
         {
             for (int i = 0; i < N; ++i)
             {
@@ -118,7 +116,7 @@ namespace arch
 
     /* Parallel reduce driver function for the CUDA reductions */
     template <unsigned int NReductions, typename Lambda, typename T>
-    static void parallel_reduce(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
+    inline static void parallel_reduce(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
     {
         // Copy initial values to the AuxReducer object
         AuxReducer<NReductions> aux_sum;

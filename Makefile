@@ -113,12 +113,12 @@ MPICXXFLAGS = $(CXXDEFS) $(CXXFLAGS)
 endif
 
 SRC_PATH = src/
-SOURCES = $(shell ls src/*.cpp)
+SOURCES = $(wildcard $(SRC_PATH)*.cpp)
+HEADERS = $(wildcard $(SRC_PATH)*.h) $(wildcard $(SRC_PATH)arch/*.h)
 
-OBJ_PATH = src/
-OBJECTS = $(shell for file in $(SOURCES);\
-		do echo -n $$file | sed -e "s/\(.*\)\.cpp/\1\.o/";echo -n " ";\
-		done)
+OBJ_PATH = $(SRC_PATH)
+OBJECTS = $(SOURCES:$(SRC_PATH)%.cpp=$(OBJ_PATH)%.o)
+
 
 build: $(EXE)
 
@@ -137,5 +137,5 @@ clean: $(CLEAN)
 	rm -rf $(OBJECTS) $(EXE) *.tmp desul
 
 # Compilation rules
-$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(SRC_PATH)arch/%.h $(KOKKOS_CPP_DEPENDS)
+$(OBJ_PATH)%.o: $(SRC_PATH)%.cpp $(HEADERS) $(KOKKOS_CPP_DEPENDS)
 	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) $(KOKKOS_CPPFLAGS) $(KOKKOS_CXXFLAGS) -c $< -o $(OBJ_PATH)$(notdir $@)

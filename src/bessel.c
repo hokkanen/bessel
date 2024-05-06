@@ -43,7 +43,7 @@ int main(int argc, char *argv []){
 
   /* Run the loop over iterations */
   unsigned int iter;
-  arch_parallel_reduce(N_ITER, iter, mse, 
+  arch_parallel_reduce(N_ITER, iter, mse, 2 * n_beta,
   {
     /* Calculate the mean of the population and the sample */
     float p_mean = 0.0f;

@@ -95,7 +95,7 @@ LIBS += -lmatplot -ljpeg -ltiff -lz -lpng -lnodesoup
 endif
 
 # Message passing protocol
-ifeq ($(MPI),MAHTI)
+ifeq ($(MPI),OMPI)
 
 # On Mahti
 MPICXX = mpicxx
@@ -103,7 +103,7 @@ MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
 LDFLAGS += -L${CUDA_PATH}/lib64
 LIBS += -lcudart
 
-else ifeq ($(MPI),LUMI)
+else ifeq ($(MPI),CRAY)
 
 # On Lumi
 MPICXX = CC

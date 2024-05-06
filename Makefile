@@ -22,7 +22,7 @@ else ifeq ($(HIP),ROCM)
 
 CXX = hipcc
 CXXDEFS = -DHAVE_HIP 
-CXXFLAGS = -g -O3 --offload-arch=gfx90a -I/opt/rocm/hiprand/include/ -I/opt/rocm/rocrand/include/
+CXXFLAGS = -g -O3 -x hip --offload-arch=gfx90a -I/opt/rocm/hiprand/include/ -I/opt/rocm/rocrand/include/
 FILETYPE = .cpp
 EXE = bessel
 
@@ -64,8 +64,11 @@ LIBS += -lm -lcudart
 else ifeq ($(MPI),CRAY)
 
 # On Lumi
+ifeq ($(CXX),gcc)
+CXX = CC
+endif
 MPICXX = CC
-MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++17 -x hip
+MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI -g -O3
 LDFLAGS += -L${ROCM_PATH}/lib
 LIBS += -lm -lamdhip64
 
@@ -107,7 +110,11 @@ $(EXE): $(OBJECTS)
 clean: $(CLEAN)
 	rm -f $(OBJECTS) $(EXE) src/*.cpp
 
-# Compilation rules
-$(OBJ_PATH)%.o: $(SRC_PATH)%$(FILETYPE)
-	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) -c $< -o $(SRC_PATH)$(notdir $@)
+# Rule for compiling comms.cpp with $(MPICXX)
+$(OBJ_PATH)comms.o: $(SRC_PATH)comms$(FILETYPE) $(HEADERS)
+	$(MPICXXENV) $(MPICXX) $(MPICXXFLAGS) -c $< -o $@
+
+# Rule for compiling other bessel.cpp with $(CXX)
+$(OBJ_PATH)bessel.o: $(SRC_PATH)bessel$(FILETYPE) $(HEADERS)
+	$(CXX) $(CXXDEFS) $(CXXFLAGS) -c $< -o $@
 	

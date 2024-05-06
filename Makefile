@@ -28,7 +28,7 @@ EXE = bessel
 
 else ifeq ($(OMP),CUDA)
 
-CXX = nvc
+CXX = nvc++
 CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80
 FILETYPE = .c
 EXE = bessel
@@ -59,7 +59,7 @@ ifeq ($(MPI),OMPI)
 MPICXX = mpicxx
 MPICXXENV = OMPI_CXXFLAGS='' OMPI_CXX='$(CXX) -DHAVE_MPI $(CXXDEFS) $(CXXFLAGS)'
 LDFLAGS += -L${CUDA_PATH}/lib64
-LIBS += -lcudart
+LIBS += -lm -lcudart
 
 else ifeq ($(MPI),CRAY)
 
@@ -67,12 +67,13 @@ else ifeq ($(MPI),CRAY)
 MPICXX = CC
 MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++17 -x hip
 LDFLAGS += -L${ROCM_PATH}/lib
-LIBS += -lamdhip64
+LIBS += -lm -lamdhip64
 
 else
 
 MPICXX = $(CXX)
 MPICXXFLAGS = $(CXXDEFS) $(CXXFLAGS)
+LIBS += -lm
 
 endif
 

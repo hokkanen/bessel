@@ -162,30 +162,31 @@ extern "C"
             atomicAdd(&rslt[i], aggregate);
         }
       }
+    }
 
-      /* Parallel reduce driver function for the CUDA reductions (internal use only) */
-      template <unsigned int NReductions, typename Lambda, typename T>
-      __forceinline__ static void _arch_parallel_reduce_driver(const unsigned int loop_size, T(&sum)[NReductions], Lambda loop_body)
-      {
+    /* Parallel reduce driver function for the CUDA reductions (internal use only) */
+    template <unsigned int NReductions, typename Lambda, typename T>
+    __forceinline__ static void _arch_parallel_reduce_driver(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
+    {
 
-        /* Set the kernel dimensions */
-        const unsigned int blocksize = ARCH_BLOCKSIZE;
-        const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;
+      /* Set the kernel dimensions */
+      const unsigned int blocksize = ARCH_BLOCKSIZE;
+      const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;
 
-        /* Create a device buffer for the reduction results */
-        T *d_buf;
-        CUDA_ERR(cudaMalloc(&d_buf, NReductions * sizeof(T)));
-        CUDA_ERR(cudaMemcpy(d_buf, sum, NReductions * sizeof(T), cudaMemcpyHostToDevice));
+      /* Create a device buffer for the reduction results */
+      T *d_buf;
+      CUDA_ERR(cudaMalloc(&d_buf, NReductions * sizeof(T)));
+      CUDA_ERR(cudaMemcpy(d_buf, sum, NReductions * sizeof(T), cudaMemcpyHostToDevice));
 
-        /* Call the kernel (the number of reductions known at compile time) */
-        _arch_reduction_kernel<NReductions><<<gridsize, blocksize>>>(loop_body, d_buf, loop_size);
-        /* Synchronize after kernel call */
-        CUDA_ERR(cudaStreamSynchronize(0));
+      /* Call the kernel (the number of reductions known at compile time) */
+      _arch_reduction_kernel<NReductions><<<gridsize, blocksize>>>(loop_body, d_buf, loop_size);
+      /* Synchronize after kernel call */
+      CUDA_ERR(cudaStreamSynchronize(0));
 
-        /* Copy the results back to host and free the allocated memory back to pool*/
-        CUDA_ERR(cudaMemcpy(sum, d_buf, NReductions * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_ERR(cudaFree(d_buf));
-      }
+      /* Copy the results back to host and free the allocated memory back to pool*/
+      CUDA_ERR(cudaMemcpy(sum, d_buf, NReductions * sizeof(T), cudaMemcpyDeviceToHost));
+      CUDA_ERR(cudaFree(d_buf));
+    }
 
 /* Parallel for driver macro for the CUDA loops */
 #define arch_parallel_for(loop_size, inc, loop_body)                        \
@@ -205,9 +206,8 @@ extern "C"
         loop_body;                                                           \
     _arch_parallel_reduce_driver(loop_size, sum, lambda_body);               \
     (void)inc;                                                               \
-    (void)num_sum;                                                           \
   }
-    }
   }
+}
 
 #endif // !BESSEL_ARCH_CUDA_H

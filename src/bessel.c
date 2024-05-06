@@ -1,8 +1,6 @@
 #include <limits.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 /* Namespaces "comms" and "arch" declared here */
@@ -48,7 +46,7 @@ int main(int argc, char *argv []){
 
   /* Run the loop over iterations */
   unsigned int iter;
-  arch_parallel_reduce(N_ITER, iter, mse, n_beta,
+  arch_parallel_reduce(N_ITER, iter, mse, 2 * n_beta,
   {
     /* Calculate the mean of the population and the sample */
     float p_mean = 0.0f;
@@ -117,12 +115,11 @@ int main(int argc, char *argv []){
       printf("Beta = %.2f: RMSE for stdev = %.5f and var = %.5f\n", sub, rmse_stdev, rmse_var);
     }
   }
+  /* Some device backends require a finalization */
+  arch_finalize(comms_get_rank());
 
   /* Finalize processes and devices */
   comms_finalize_procs();
-
-  /* Some device backends also require a finalization */
-  arch_finalize(comms_get_rank());
 
   /* Print timing */
   if(my_rank == 0){

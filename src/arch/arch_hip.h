@@ -200,7 +200,6 @@ __global__ static void _arch_reduction_kernel(Lambda loop_body, T *rslt, const u
         loop_body;                                                           \
     _arch_parallel_reduce_driver(loop_size, sum, lambda_body);               \
     (void)inc;                                                               \
-    (void)num_sum;                                                           \
   }
 
 #endif // !BESSEL_ARCH_HIP_H

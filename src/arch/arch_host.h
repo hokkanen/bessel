@@ -98,7 +98,7 @@ inline static float arch_random_float(unsigned long long seed, unsigned long lon
 /* Parallel for driver macro for the host loops */
 #define arch_parallel_for(loop_size, inc, loop_body) \
   {                                                  \
-#pragma omp target teams distribute parallel for     \
+_Pragma("omp target teams distribute parallel for")  \
     for (inc = 0; inc < loop_size; inc++)            \
     {                                                \
       loop_body;                                     \
@@ -106,12 +106,14 @@ inline static float arch_random_float(unsigned long long seed, unsigned long lon
   }
 
 /* Parallel for driver macro for the host loops */
-#define arch_parallel_reduce(loop_size, inc, sum, num_sum, loop_body)            \
-  {                                                                              \
-#pragma omp target teams distribute parallel for reduction(+ : sum[0 : num_sum]) \
-    for (inc = 0; inc < loop_size; inc++)                                        \
-    {                                                                            \
-      loop_body;                                                                 \
-    }                                                                            \
+#define arch_parallel_reduce(loop_size, inc, sum, num_sum, loop_body)       \
+  {                                                                         \
+  float *s = sum;                                                           \
+  int ns = num_sum;                                                         \
+_Pragma("omp target teams distribute parallel for reduction(+ : s[0 : ns])")\
+    for (inc = 0; inc < loop_size; inc++)                                   \
+    {                                                                       \
+      loop_body;                                                            \
+    }                                                                       \
   }
 #endif // !BESSEL_ARCH_HOST_H

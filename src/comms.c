@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 #include "comms.h"
 
 /* Communication functions */

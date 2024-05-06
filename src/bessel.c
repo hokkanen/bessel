@@ -20,6 +20,9 @@ int main(int argc, char *argv []){
   comms_init_procs(&argc, &argv);
   const unsigned int my_rank = comms_get_rank();
 
+  /* Some device backends require an initialization */
+  arch_init(comms_get_node_rank());
+
   /* Set spacing and range for beta */
   const unsigned int n_beta = 40;
   const float range_beta = 4.0f;
@@ -117,6 +120,9 @@ int main(int argc, char *argv []){
 
   /* Finalize processes and devices */
   comms_finalize_procs();
+
+  /* Some device backends also require a finalization */
+  arch_finalize(comms_get_rank());
 
   /* Print timing */
   if(my_rank == 0){

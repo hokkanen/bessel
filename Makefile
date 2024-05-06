@@ -85,11 +85,11 @@ endif
 
 # Identify sources and objects
 SRC_PATH = src/
-SOURCES = $(wildcard $(SRC_PATH)*.cpp)
+SOURCES = $(wildcard $(SRC_PATH)*$(FILETYPE))
 HEADERS = $(wildcard $(SRC_PATH)*.h) $(wildcard $(SRC_PATH)arch/*.h)
 
 OBJ_PATH = $(SRC_PATH)
-OBJECTS = $(SOURCES:$(SRC_PATH)%.cpp=$(OBJ_PATH)%.o)
+OBJECTS = $(SOURCES:$(SRC_PATH)%$(FILETYPE)=$(OBJ_PATH)%.o)
 
 
 build: $(EXE)

@@ -20,7 +20,7 @@ else ifeq ($(HIP),ROCM)
 
 CXX = hipcc
 CXXDEFS = -DHAVE_HIP
-CXXFLAGS = -g -O3 --offload-arch=gfx90a -I/opt/rocm/hiprand/include/ -I/opt/rocm/rocrand/include/
+CXXFLAGS = -g -O3 -x hip --offload-arch=gfx90a -I/opt/rocm/hiprand/include/ -I/opt/rocm/rocrand/include/
 EXE = bessel
 
 else ifeq ($(KOKKOS),CUDA)
@@ -106,8 +106,11 @@ LIBS += -lcudart
 else ifeq ($(MPI),CRAY)
 
 # On Lumi
+ifeq ($(CXX),g++)
+CXX = CC
+endif
 MPICXX = CC
-MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI $(CXXFLAGS) -std=c++17 -x hip
+MPICXXFLAGS = $(CXXDEFS) -DHAVE_MPI -g -O3
 LDFLAGS += -L${ROCM_PATH}/lib
 LIBS += -lamdhip64
 

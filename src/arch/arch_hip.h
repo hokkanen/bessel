@@ -157,30 +157,31 @@ __global__ static void _arch_reduction_kernel(Lambda loop_body, T *rslt, const u
         atomicAdd(&rslt[i], aggregate);
     }
   }
+}
 
-  /* Parallel reduce driver function for the HIP reductions (internal use only) */
-  template <unsigned int NReductions, typename Lambda, typename T>
-  __forceinline__ static void _arch_parallel_reduce_driver(const unsigned int loop_size, T(&sum)[NReductions], Lambda loop_body)
-  {
+/* Parallel reduce driver function for the HIP reductions (internal use only) */
+template <unsigned int NReductions, typename Lambda, typename T>
+__forceinline__ static void _arch_parallel_reduce_driver(const unsigned int loop_size, T (&sum)[NReductions], Lambda loop_body)
+{
 
-    /* Set the kernel dimensions */
-    const unsigned int blocksize = ARCH_BLOCKSIZE;
-    const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;
+  /* Set the kernel dimensions */
+  const unsigned int blocksize = ARCH_BLOCKSIZE;
+  const unsigned int gridsize = (loop_size - 1 + blocksize) / blocksize;
 
-    /* Create a device buffer for the reduction results */
-    T *d_buf;
-    HIP_ERR(hipMalloc(&d_buf, NReductions * sizeof(T)));
-    HIP_ERR(hipMemcpy(d_buf, sum, NReductions * sizeof(T), hipMemcpyHostToDevice));
+  /* Create a device buffer for the reduction results */
+  T *d_buf;
+  HIP_ERR(hipMalloc(&d_buf, NReductions * sizeof(T)));
+  HIP_ERR(hipMemcpy(d_buf, sum, NReductions * sizeof(T), hipMemcpyHostToDevice));
 
-    /* Call the kernel (the number of reductions known at compile time) */
-    _arch_reduction_kernel<NReductions><<<gridsize, blocksize>>>(loop_body, d_buf, loop_size);
-    /* Synchronize after kernel call */
-    HIP_ERR(hipStreamSynchronize(0));
+  /* Call the kernel (the number of reductions known at compile time) */
+  _arch_reduction_kernel<NReductions><<<gridsize, blocksize>>>(loop_body, d_buf, loop_size);
+  /* Synchronize after kernel call */
+  HIP_ERR(hipStreamSynchronize(0));
 
-    /* Copy the results back to host and free the allocated memory back to pool*/
-    HIP_ERR(hipMemcpy(sum, d_buf, NReductions * sizeof(T), hipMemcpyDeviceToHost));
-    HIP_ERR(hipFree(d_buf));
-  }
+  /* Copy the results back to host and free the allocated memory back to pool*/
+  HIP_ERR(hipMemcpy(sum, d_buf, NReductions * sizeof(T), hipMemcpyDeviceToHost));
+  HIP_ERR(hipFree(d_buf));
+}
 
 /* Parallel for driver macro for the HIP loops */
 #define arch_parallel_for(loop_size, inc, loop_body)                        \

@@ -63,8 +63,6 @@ CXX = g++
 CXXFLAGS = -g -O3
 KOKKOS_DEVICES = "OPENMP"
 include $(KOKKOS_PATH)/Makefile.kokkos
-# Remove any ldl flags that do not start with -L
-KOKKOS_LDFLAGS := $(filter -L%,$(KOKKOS_LDFLAGS))
 # Other
 CLEAN = kokkos-clean
 CXXDEFS = -DHAVE_KOKKOS

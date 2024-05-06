@@ -7,6 +7,12 @@ The simulation calculates the root mean squared error for different values of $\
 
 The implementation uses a special construct for the parallel loops in [bessel.cpp](src/bessel.cpp). In the `c` branch (C example), this is based on a preprocessor macro, whereas the `cpp` branch (C++ example) is based on a lambda function, an approach similar to some accelerator frameworks such as SYCL, Kokkos, RAJA, and others. Either option allows conditional compilation of the loops for multiple architectures while keeping the source code clean and readable. An example of the usage of curand and hiprand and Kokkos random number generation libraries inside a GPU kernel are given in [arch_cuda.h](src/arch/arch_cuda.h), [arch_hip.h](src/arch/arch_hip.h) and [arch_kokkos.h](src/arch/arch_kokkos.h). Furthermore, in [arch_host.h](src/arch/arch_host.h), sequential host execution is implemented together with optional OpenMP offloading that is combined with curand random number generator and can be compiled with NVIDIA `nvc++` compiler.
 
+Clone the repo with `--recursive` flag to get Kokkos repo as well:
+
+```
+git clone --recursive https://github.com/hokkanen/bessel.git
+```
+
 The code can be conditionally compiled for either CUDA, HIP, Kokkos or HOST execution with or without MPI. The HOST implementation can also be further offloaded to GPUs by OpenMP. The correct definitions for each accelerator backend option are selected in [arch_api.h](src/arch/arch_api.h) by choosing the respective header file. Some compilation combinations are shown below, but also other combination are possible.
 
 ```
@@ -17,7 +23,7 @@ make
 make MPI=OMPI (or MPI=CRAY)
 
 // Compile to run parallel on CPU with KOKKOS (OpenMP)
-make KOKKOS=OPENMP
+make KOKKOS=OMP
 
 // Compile to run parallel on GPU with OpenMP offloading (NVIDIA GPUs)
 make OMP=CUDA

@@ -47,7 +47,7 @@ ifeq ($(UMPIRE),1)
 
 CXXDEFS += -DHAVE_UMPIRE
 CXXFLAGS += -I$(shell pwd)/umpire/include/
-LDFLAGS += -L$(shell pwd)/umpire/lib/
+LDFLAGS += -L$(shell pwd)/umpire/lib/ -L$(shell pwd)/umpire/lib64/
 LIBS += -lcamp -lumpire
 
 endif

@@ -50,7 +50,7 @@ Umpire can be installed with CUDA (HIP) support by
 ```
 git clone --recursive https://github.com/LLNL/Umpire.git
 cd Umpire && mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/path -DUMPIRE_ENABLE_C=On -DENABLE_CUDA=On
+cmake .. -DCMAKE_INSTALL_PREFIX=/path/umpire -DUMPIRE_ENABLE_C=On -DENABLE_CUDA=On
 # cmake .. -DCMAKE_INSTALL_PREFIX=/path/umpire -DUMPIRE_ENABLE_C=On -DENABLE_HIP=On -DCMAKE_CXX_COMPILER=hipcc
 make install
 ```

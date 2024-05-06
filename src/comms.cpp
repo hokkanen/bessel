@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <cstring>
 #include "./comms.h"
 
 #if defined(HAVE_MPI)
@@ -8,7 +10,7 @@ namespace comms
 
   static int MPI_INITIALIZED = 0;
 
-  int get_procs()
+  int get_global_procs()
   {
     int comm_size = 1;
     if (MPI_INITIALIZED == 1)
@@ -101,7 +103,7 @@ namespace comms
 /* Namespace for the communication functions without MPI */
 namespace comms
 {
-  int get_procs()
+  int get_global_procs()
   {
     int comm_size = 1;
     return comm_size;

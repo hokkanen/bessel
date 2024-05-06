@@ -122,8 +122,8 @@ int main(int argc, char *argv[])
       float *mse_var = &mse[n_beta];
       for (unsigned j = 0; j < n_beta; ++j)
       {
-        mse_stdev[j] /= (comms::get_procs() * N_ITER);
-        mse_var[j] /= (comms::get_procs() * N_ITER);
+        mse_stdev[j] /= (comms::get_global_procs() * N_ITER);
+        mse_var[j] /= (comms::get_global_procs() * N_ITER);
         float rmse_stdev = sqrtf(mse_stdev[j]);
         float rmse_var = sqrtf(mse_var[j]);
         float sub = j * (range_beta / n_beta) - range_beta / 2.0f;

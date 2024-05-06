@@ -12,7 +12,7 @@
 
 namespace comms
 {
-  int get_procs();
+  int get_global_procs();
   int get_global_rank();
   int get_node_procs();
   int get_node_rank();

@@ -5,6 +5,7 @@
 
 /* Namespaces "comms" and "arch" declared here */
 #include "comms.h"
+#include "./arch/arch_api.h"
 
 /* Set problem dimensions */
 #define N_ITER 10000

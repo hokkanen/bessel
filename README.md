@@ -13,7 +13,7 @@ Clone the repo with `--recursive` flag to get Kokkos repo as well:
 git clone --recursive https://github.com/hokkanen/bessel.git
 ```
 
-The code can be conditionally compiled for either CUDA, HIP, Kokkos or HOST execution with or without MPI. The HOST implementation can also be further offloaded to GPUs by OpenMP. The correct definitions for each accelerator backend option are selected in [arch_api.h](src/arch/arch_api.h) by choosing the respective header file. Some compilation combinations are shown below, but also other combination are possible.
+The code can be conditionally compiled for either CUDA, HIP, Kokkos or HOST execution with or without MPI. The HOST implementation can also be further offloaded to GPUs by OpenMP. The correct definitions for each accelerator backend options are selected in [arch_api.h](src/arch/arch_api.h) by choosing the respective header file. Some compilation combinations are shown below, but also other combinations are possible.
 
 ```
 // Compile to run sequentially on CPU

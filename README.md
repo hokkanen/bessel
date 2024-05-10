@@ -5,7 +5,7 @@ This example uses the Monte Carlo method to simulate the values of Bessel's corr
 The simulation calculates the root mean squared error for different values of $\beta$. The implementation evaluates the following sum in a single loop by $$\sum_{i=1}^{N}(x_i - \bar{x})^2 = \sum_{i=1}^{N}x_i^2 - N \bar{x}^2.$$ The sample standard deviation is then simply calculated by $$s = \sqrt{s^2} = \sqrt{\frac{1}{N - \beta}\sum_{i=1}^{N}x_i^2 - N \bar{x}^2}$$ after which the root mean squared errors are obtained by comparing these results to the exact population variance and standard deviation.
 
 
-The implementation uses a special construct for the parallel loops in [bessel.cpp](src/bessel.cpp). In the `c` branch (C example), this is based on a preprocessor macro, whereas the `cpp` branch (C++ example) is based on a lambda function, an approach similar to some accelerator frameworks such as SYCL, Kokkos, RAJA, and others. Either option allows conditional compilation of the loops for multiple architectures while keeping the source code clean and readable. An example of the usage of curand and hiprand and Kokkos random number generation libraries inside a GPU kernel are given in [arch_cuda.h](src/arch/arch_cuda.h), [arch_hip.h](src/arch/arch_hip.h) and [arch_kokkos.h](src/arch/arch_kokkos.h). Furthermore, in [arch_host.h](src/arch/arch_host.h), sequential host execution is implemented together with optional OpenMP offloading that is combined with curand random number generator and can be compiled with NVIDIA `nvc++` compiler.
+The implementation uses a special construct for the parallel loops in [bessel.cpp](src/bessel.cpp). In the `c` branch (C example), this is based on a preprocessor macro, whereas the `cpp` branch (C++ example) is based on a lambda function, an approach similar to some accelerator frameworks such as SYCL, Kokkos, RAJA, and others. Either option allows conditional compilation of the loops for multiple architectures while keeping the source code clean and readable. An example of the usage of curand and hiprand and Kokkos random number generation libraries inside a GPU kernel are given in [arch_cuda.h](src/arch/arch_cuda.h), [arch_hip.h](src/arch/arch_hip.h) and [arch_kokkos.h](src/arch/arch_kokkos.h) (Kokkos backend is implemented only for the `cpp` branch). Furthermore, in [arch_host.h](src/arch/arch_host.h), sequential host execution is implemented together with optional OpenACC and OpenMP offloading combined with curand random number generator and can be compiled with NVIDIA `nvc++` compiler.
 
 Clone the repo with `--recursive` flag to get Kokkos repo as well:
 
@@ -37,8 +37,8 @@ make HIP=CUDA
 // Compile to run parallel on GPU with HIP (AMD GPUs)
 make HIP=ROCM
 
-// Compile to run parallel on many GPUs with HIP and OpenMPI (NVIDIA GPUs)
-make HIP=CUDA MPI=OMPI
+// Compile to run parallel on many GPUs with OpenACC and OpenMPI (NVIDIA GPUs)
+make ACC=CUDA MPI=OMPI
 
 // Compile to run parallel on many GPUs with KOKKOS and Cray MPI
 make KOKKOS=ROCM MPI=CRAY
@@ -66,3 +66,33 @@ The executable can be run using 4 MPI processes with slurm by:
 ```
 srun ./bessel 4
 ```
+
+## Benchmarking
+
+**Bessel settings**
+```
+#define N_ITER 1000000
+#define N_POPU 10000
+#define N_SAMPLE 50
+```
+
+**MAHTI GPU node**
+```
+GPU parallel (CUDA):     138[ms]
+GPU parallel (Kokkos):   180[ms]
+GPU parallel (OpenACC):  236[ms]
+GPU parallel (OpenMP):   237[ms]
+CPU parallel (Kokkos):   2494[ms]
+CPU sequential (Kokkos): 287944[ms]
+```
+
+**LUMI GPU node**
+```
+GPU parallel (CUDA):     308[ms]
+GPU parallel (Kokkos):   306[ms]
+GPU parallel (OpenACC):  No OpenACC compiler support
+GPU parallel (OpenMP):   Cannot compile OpenMP target with hiprand_kernel.h
+CPU parallel (Kokkos):   5419[ms]
+CPU sequential (Kokkos): 242730[ms]
+```
+All cases were run with a single MPI process. GPU timings were achieved by first doing `salloc` and then running with `srun` multiple times to avoid any potential first run overhead.

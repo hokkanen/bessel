@@ -166,7 +166,7 @@ namespace arch
     /* OpenACC requires specifying all levels (gang, worker and vector) here to prevent inner loop parallelization */
 #pragma acc parallel loop independent gang worker vector reduction(+ : aux_sum[0 : NReductions])
 #pragma omp target teams distribute parallel for reduction(+ : aux_sum[0 : NReductions])
-    /* Execute the reduction loop (OpenACC requires specifying all parallelization levels here to prevent inner loop parallelization)*/
+    /* Execute the reduction loop */
     for (unsigned i = 0; i < loop_size; i++)
     {
       loop_body(i, aux_sum);

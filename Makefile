@@ -2,7 +2,16 @@ default: build
 	echo "Start Build"
 
 # Accelerator architecture
-ifeq ($(CUDA),1)
+ifeq ($(ACC),CUDA)
+
+# Use nvc++ instead of nvc because of curand_kernel.h
+CXX = nvc++
+CXXFLAGS = -g -O3 -acc -gpu=cc80 -Minfo=accel
+LDFLAGS += -acc -gpu=cc80
+FILETYPE = .c
+EXE = bessel
+
+else ifeq ($(CUDA),1)
 
 CXX = nvcc
 CXXDEFS = -DHAVE_CUDA
@@ -28,8 +37,11 @@ EXE = bessel
 
 else ifeq ($(OMP),CUDA)
 
+# Use nvc++ instead of nvc because of curand_kernel.h
 CXX = nvc++
 CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80
+# Huge performance loss without linker flags
+LDFLAGS += -mp=gpu -gpu=cc80
 FILETYPE = .c
 EXE = bessel
 

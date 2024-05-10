@@ -7,6 +7,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _OPENACC
+#include <openacc.h>
+#include <curand_kernel.h>
+#endif
+
 #ifdef _OPENMP
 #include <omp.h>
 #include <curand_kernel.h>
@@ -23,9 +28,10 @@ inline static void arch_init(int node_rank)
 /* Host backend finalization */
 inline static void arch_finalize(int rank)
 {
-#ifdef _OPENMP
+#ifdef _OPENACC
+  printf("Rank %d, OpenACC (offload) finalized.\n", rank);
+#elif defined(_OPENMP)
   printf("Rank %d, OpenMP (offload) finalized.\n", rank);
-
 #else
   printf("Rank %d, Host finalized.\n", rank);
 #endif
@@ -46,7 +52,10 @@ inline static void arch_free(void *ptr)
 /* Host-to-host memory copy */
 inline static void arch_memcpy_d2d(void *dst, void *src, size_t bytes)
 {
-#ifdef _OPENMP
+#ifdef _OPENACC
+  int dev = acc_get_device_num(acc_device_nvidia);
+  acc_memcpy_device(dst, src, bytes);
+#elif defined(_OPENMP)
   const int dev = omp_get_default_device();
   omp_target_memcpy(dst, src, bytes, 0, 0, dev, dev);
 #else
@@ -55,32 +64,36 @@ inline static void arch_memcpy_d2d(void *dst, void *src, size_t bytes)
 }
 
 /* Atomic add function for host use */
+#pragma acc routine
 #pragma omp declare target
 inline static void arch_atomic_add(float *array_loc, float value)
 {
+#pragma acc atomic update
 #pragma omp atomic update
   *array_loc += value;
 }
 #pragma omp end declare target
 
 /* A function for getting a random float from the standard distribution */
+#pragma acc routine
 #pragma omp declare target
 inline static float arch_random_float(unsigned long long seed, unsigned long long seq, unsigned int idx, float mean, float stdev)
 {
-  /* Re-seed the first case */
-  if (idx == 0)
-  {
-    /* Overflow is defined behavior with unsigned, and therefore ok here */
-    srand((unsigned int)seed + (unsigned int)seq);
-  }
   float z0 = 0;
-#if _OPENMP /* Curand works with OpenMP when compiling with nvc */
+  /* Curand works with OpenMP when compiling with nvc++ */
+#if defined(_OPENACC) || defined(_OPENMP) 
   curandStatePhilox4_32_10_t state;
   /* curand_init() reproduces the same random number with the same seed and seq */
   curand_init(seed, seq, 0, &state);
   /* curand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1 */
   z0 = stdev * curand_normal(&state) + mean;
 #else
+  /* Re-seed the first case */
+  if (idx == 0)
+  {
+    /* Overflow is defined behavior with unsigned, and therefore ok here */
+    srand((unsigned int)seed + (unsigned int)seq);
+  }
   /* Use Box Muller algorithm to get a float from a normal distribution */
   const float two_pi = 2.0f * M_PI;
   const float u1 = (float)rand() / (float)RAND_MAX;
@@ -96,24 +109,26 @@ inline static float arch_random_float(unsigned long long seed, unsigned long lon
 #pragma omp end declare target
 
 /* Parallel for driver macro for the host loops */
-#define arch_parallel_for(loop_size, inc, loop_body) \
-  {                                                  \
-_Pragma("omp target teams distribute parallel for")  \
-    for (inc = 0; inc < loop_size; inc++)            \
-    {                                                \
-      loop_body;                                     \
-    }                                                \
+#define arch_parallel_for(loop_size, inc, loop_body)       \
+  {                                                        \
+_Pragma("acc parallel loop independent gang worker vector")\
+_Pragma("omp target teams distribute parallel for")        \
+    for (inc = 0; inc < loop_size; inc++)                  \
+    {                                                      \
+      loop_body;                                           \
+    }                                                      \
   }
 
 /* Parallel for driver macro for the host loops */
-#define arch_parallel_reduce(loop_size, inc, sum, num_sum, loop_body)       \
-  {                                                                         \
-  float *s = sum;                                                           \
-  int ns = num_sum;                                                         \
-_Pragma("omp target teams distribute parallel for reduction(+ : s[0 : ns])")\
-    for (inc = 0; inc < loop_size; inc++)                                   \
-    {                                                                       \
-      loop_body;                                                            \
-    }                                                                       \
+#define arch_parallel_reduce(loop_size, inc, sum, num_sum, loop_body)               \
+  {                                                                                 \
+    float *s = sum;                                                                 \
+    unsigned ns = num_sum;                                                          \
+_Pragma("acc parallel loop independent gang worker vector reduction(+ : s[0 : ns])")\
+_Pragma("omp target teams distribute parallel for reduction(+ : s[0 : ns])")        \
+    for (inc = 0; inc < loop_size; inc++)                                           \
+    {                                                                               \
+      loop_body;                                                                    \
+    }                                                                               \
   }
 #endif // !BESSEL_ARCH_HOST_H

@@ -150,7 +150,7 @@ $(EXE): $(OBJECTS) $(KOKKOS_LINK_DEPENDS)
 
 # Type 'make clean KOKKOS=CUDA' to clean Kokkos stuff as well
 clean: $(CLEAN)
-	rm -rf $(OBJECTS) $(EXE) *.tmp desul
+	rm -rf $(OBJECTS) $(EXE) *.o *.tmp desul
 
 # Rule for compiling comms.cpp with $(MPICXX)
 $(OBJ_PATH)comms.o: $(SRC_PATH)comms.cpp $(HEADERS)

@@ -81,7 +81,7 @@ inline static float arch_random_float(unsigned long long seed, unsigned long lon
 {
   float z0 = 0;
   /* Curand works with OpenMP when compiling with nvc++ */
-#if defined(_OPENACC) || defined(_OPENMP) 
+#if defined(_OPENACC) || defined(_OPENMP)
   curandStatePhilox4_32_10_t state;
   /* curand_init() reproduces the same random number with the same seed and seq */
   curand_init(seed, seq, 0, &state);
@@ -122,13 +122,17 @@ _Pragma("omp target teams distribute parallel for")        \
 /* Parallel for driver macro for the host loops */
 #define arch_parallel_reduce(loop_size, inc, sum, num_sum, loop_body)               \
   {                                                                                 \
-    float *s = sum;                                                                 \
-    unsigned ns = num_sum;                                                          \
+    {                                                                               \
+_Pragma("diag_suppress set_but_not_used")                                           \
+      float *s = sum;                                                               \
+      unsigned ns = num_sum;                                                        \
 _Pragma("acc parallel loop independent gang worker vector reduction(+ : s[0 : ns])")\
 _Pragma("omp target teams distribute parallel for reduction(+ : s[0 : ns])")        \
-    for (inc = 0; inc < loop_size; inc++)                                           \
-    {                                                                               \
-      loop_body;                                                                    \
+      for (inc = 0; inc < loop_size; inc++)                                         \
+      {                                                                             \
+        loop_body;                                                                  \
+      }                                                                             \
     }                                                                               \
+_Pragma("diag_default set_but_not_used")                                            \
   }
 #endif // !BESSEL_ARCH_HOST_H

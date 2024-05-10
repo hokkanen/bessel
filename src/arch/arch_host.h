@@ -77,7 +77,6 @@ namespace arch
 #pragma omp atomic update
     *array_loc += value;
   }
-#pragma omp end declare target
 
   /* A function to make sure the seed is of right type */
   template <typename T>
@@ -104,7 +103,6 @@ namespace arch
     return 0;
 #endif
   }
-#pragma omp end declare target
 
   /* A function for freeing a random number generator state (not needed by host) */
 #pragma acc routine
@@ -115,7 +113,6 @@ namespace arch
     (void)seed;
     (void)generator;
   }
-#pragma omp end declare target
 
 /* A function for getting a random float from the standard distribution */
 #pragma acc routine
@@ -141,7 +138,6 @@ namespace arch
 #endif
     return (T)z0;
   }
-#pragma omp end declare target
 
   /* Parallel for driver function for the host loops */
   template <typename Lambda>

@@ -7,6 +7,11 @@
 #include <random>
 #include <string.h>
 
+#ifdef _OPENACC
+#include <openacc.h>
+#include <curand_kernel.h>
+#endif
+
 #ifdef _OPENMP
 #include <omp.h>
 #include <curand_kernel.h>
@@ -27,9 +32,10 @@ namespace arch
   /* Host backend finalization */
   inline static void finalize(int rank)
   {
-#ifdef _OPENMP
+#ifdef _OPENACC
+    printf("Rank %d, OpenACC (offload) finalized.\n", rank);
+#elif defined(_OPENMP)
     printf("Rank %d, OpenMP (offload) finalized.\n", rank);
-
 #else
     printf("Rank %d, Host finalized.\n", rank);
 #endif
@@ -50,7 +56,10 @@ namespace arch
   /* Host-to-host memory copy */
   inline static void memcpy_d2d(void *dst, void *src, size_t bytes)
   {
-#ifdef _OPENMP
+#ifdef _OPENACC
+    int dev = acc_get_device_num(acc_device_nvidia);
+    acc_memcpy_device(dst, src, bytes);
+#elif defined(_OPENMP)
     const int dev = omp_get_default_device();
     omp_target_memcpy(dst, src, bytes, 0, 0, dev, dev);
 #else
@@ -59,10 +68,12 @@ namespace arch
   }
 
   /* Atomic add function for host use */
+#pragma acc routine
 #pragma omp declare target
   template <typename T>
   inline static void atomic_add(T *array_loc, T value)
   {
+#pragma acc atomic update
 #pragma omp atomic update
     *array_loc += value;
   }
@@ -76,13 +87,15 @@ namespace arch
   }
 
   /* A function for initializing a random number generator state */
+#pragma acc routine
 #pragma omp declare target
   template <typename T>
   inline static auto random_state_init(T &seed, unsigned long long pos)
   {
-#if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
-    /* curand_init() reproduces the same random number with the same seed and pos */
+    /* Curand works with OpenACC and OpenMP when compiling with nvc++ */
+#if defined(_OPENACC) || defined(_OPENMP)
     curandStatePhilox4_32_10_t state;
+    /* curand_init() reproduces the same random number with the same seed and pos */
     curand_init(seed, pos, 0, &state);
     return state;
 #else
@@ -94,6 +107,7 @@ namespace arch
 #pragma omp end declare target
 
   /* A function for freeing a random number generator state (not needed by host) */
+#pragma acc routine
 #pragma omp declare target
   template <typename T, typename T2>
   inline static void random_state_free(T &seed, T2 &generator)
@@ -104,12 +118,14 @@ namespace arch
 #pragma omp end declare target
 
 /* A function for getting a random float from the standard distribution */
+#pragma acc routine
 #pragma omp declare target
   template <typename T, typename T2>
   inline static T random_float(T2 &state, T mean, T stdev)
   {
     float z0 = 0;
-#if _OPENMP /* Curand works with OpenMP when compiling with nvc++ */
+    /* Curand works with OpenACC and OpenMP when compiling with nvc++ */
+#if defined(_OPENACC) || defined(_OPENMP)
     /* curand_normal() gives a random float from a normal distribution with mean = 0 and stdev = 1 */
     z0 = stdev * curand_normal(&state) + mean;
 #else
@@ -131,8 +147,10 @@ namespace arch
   template <typename Lambda>
   inline static void parallel_for(unsigned loop_size, Lambda loop_body)
   {
-    /* Execute the standard for loop */
+    /* OpenACC requires specifying all levels (gang, worker and vector) here to prevent inner loop parallelization */
+#pragma acc parallel loop independent gang worker vector
 #pragma omp target teams distribute parallel for
+    /* Execute the standard for loop */
     for (unsigned i = 0; i < loop_size; i++)
     {
       loop_body(i);
@@ -145,8 +163,10 @@ namespace arch
   {
     /* Introduce aux pointer to avoid nvc++ (24.3-0) omp offload compile crash */
     T *aux_sum = &(sum[0]);
-    /* Execute the reduction loop */
+    /* OpenACC requires specifying all levels (gang, worker and vector) here to prevent inner loop parallelization */
+#pragma acc parallel loop independent gang worker vector reduction(+ : aux_sum[0 : NReductions])
 #pragma omp target teams distribute parallel for reduction(+ : aux_sum[0 : NReductions])
+    /* Execute the reduction loop (OpenACC requires specifying all parallelization levels here to prevent inner loop parallelization)*/
     for (unsigned i = 0; i < loop_size; i++)
     {
       loop_body(i, aux_sum);

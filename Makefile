@@ -2,7 +2,14 @@ default: build
 	echo "Start Build"
 
 # Accelerator architecture
-ifeq ($(CUDA),1)
+ifeq ($(ACC),CUDA)
+
+CXX = nvc++
+CXXFLAGS = -g -O3 -acc -gpu=cc80 -Minfo=accel
+LDFLAGS += -acc -gpu=cc80
+EXE = bessel
+
+else ifeq ($(CUDA),1)
 
 CXX = nvcc
 CXXDEFS = -DHAVE_CUDA
@@ -72,6 +79,8 @@ else ifeq ($(OMP),CUDA)
 
 CXX = nvc++
 CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80
+# Huge performance loss without linker flags
+LDFLAGS += -mp=gpu -gpu=cc80
 EXE = bessel
 
 else

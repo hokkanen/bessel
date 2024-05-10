@@ -78,7 +78,7 @@ EXE = bessel
 else ifeq ($(OMP),CUDA)
 
 CXX = nvc++
-CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80
+CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80 -Minfo=mp
 # Huge performance loss without linker flags
 LDFLAGS += -mp=gpu -gpu=cc80
 EXE = bessel

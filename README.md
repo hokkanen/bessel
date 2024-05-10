@@ -95,4 +95,4 @@ GPU parallel (OpenMP):   No OpenMP offloading support for hiprand_kernel.h
 CPU parallel (Kokkos):   5419[ms]
 CPU sequential (Kokkos): 242730[ms]
 ```
-All cases were tested using the `cpp` branch with a single MPI process. GPU timings were achieved by first doing `salloc` and then running with `srun` multiple times to avoid any potential first run overhead.
+All cases were tested using the `cpp` branch with a single MPI process. The `cpp` branch initializes curand once per population, whereas `c` branch does that for each member of the population (creating a potential performance difference). GPU timings were achieved by first doing `salloc` and then running with `srun` multiple times to avoid any potential first run overhead.

@@ -119,20 +119,19 @@ _Pragma("omp target teams distribute parallel for")        \
     }                                                      \
   }
 
+// Helper macro to apply macro arguments into the _Pragma string
+#define ARCH_PRAGMA(x) _Pragma(#x)
+
 /* Parallel for driver macro for the host loops */
-#define arch_parallel_reduce(loop_size, inc, sum, num_sum, loop_body)               \
-  {                                                                                 \
-    {                                                                               \
-_Pragma("diag_suppress set_but_not_used")                                           \
-      float *s = sum;                                                               \
-      unsigned ns = num_sum;                                                        \
-_Pragma("acc parallel loop independent gang worker vector reduction(+ : s[0 : ns])")\
-_Pragma("omp target teams distribute parallel for reduction(+ : s[0 : ns])")        \
-      for (inc = 0; inc < loop_size; inc++)                                         \
-      {                                                                             \
-        loop_body;                                                                  \
-      }                                                                             \
-    }                                                                               \
-_Pragma("diag_default set_but_not_used")                                            \
+#define arch_parallel_reduce(loop_size, inc, sum, n_sum, loop_body)                     \
+  {                                                                                     \
+    {                                                                                   \
+ARCH_PRAGMA(acc parallel loop independent gang worker vector reduction(+: sum[0:n_sum]))\
+ARCH_PRAGMA(omp target teams distribute parallel for reduction(+: sum[0:n_sum]))        \
+      for (inc = 0; inc < loop_size; inc++)                                             \
+      {                                                                                 \
+        loop_body;                                                                      \
+      }                                                                                 \
+    }                                                                                   \
   }
 #endif // !BESSEL_ARCH_HOST_H

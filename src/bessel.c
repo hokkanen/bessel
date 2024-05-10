@@ -48,50 +48,43 @@ int main(int argc, char *argv []){
   unsigned int iter;
   arch_parallel_reduce(N_ITER, iter, mse, 2 * n_beta,
   {
-    /* Calculate the mean of the population and the sample */
+    /* Calculate the mean and the squared sum of the population and the sample */
     float p_mean = 0.0f;
+    float p_squared = 0.0f;
     float s_mean = 0.0f;
+    float s_squared = 0.0f;
     
     for(unsigned int i = 0; i < N_POPU; ++i){
       unsigned long long seq = ((unsigned long long)iter * (unsigned long long)N_POPU) + (unsigned long long)i;
       float rnd_val = arch_random_float(seed, seq, i, 100.0f, 15.0f);
       p_mean += rnd_val;
-      if(i < N_SAMPLE) s_mean += rnd_val;
-      if(iter == 0 && i < 3) printf("Rank %u, rnd_val[%u]: %.5f \n", my_rank, i, rnd_val);
+      p_squared += rnd_val * rnd_val;
+      if (i < N_SAMPLE)
+      {
+        s_mean += rnd_val;
+        s_squared += rnd_val * rnd_val;
+      }
+      if(iter == 0 && i < 3) 
+        printf("Rank %u, iter: %u ,rnd_val[%u]: %.5f \n", my_rank, iter, i, rnd_val);
     }
-    
     p_mean /= N_POPU;
     s_mean /= N_SAMPLE;
-    
-    /* Calculate the variance for the population */
-    float b_var[n_beta];
-    float b_sum = 0.0f;
-    float p_var = 0.0f;
-    
-    for(unsigned int i = 0; i < N_POPU; ++i){
-      unsigned long long seq = ((unsigned long long)iter * (unsigned long long)N_POPU) + (unsigned long long)i;
-      float rnd_val = arch_random_float(seed, seq, i, 100.0f, 15.0f);
-      float p_diff = rnd_val - p_mean;
-      p_var += p_diff * p_diff;
-      if(i < N_SAMPLE){
-        float b_diff = rnd_val - s_mean;
-        b_sum += b_diff * b_diff;   
-      }
-      //if(iter == 0 && i < 3) printf("Rank %u, rnd_val[%u]: %.5f? \n", my_rank, i, rnd_val);
-    }
-    p_var /= N_POPU;
-    //printf("p_var: %f\n",p_var);
+
+    /* Calculate variance for the population and sum for the sample */
+    float p_var = (p_squared - N_POPU * p_mean * p_mean) / N_POPU;
+    float s_sum = s_squared - N_SAMPLE * s_mean * s_mean;
+    // printf("p_var: %f\n",p_var);
     
     /* Calculate the mean squared error in the sample standard deviation and variance for different beta */
+    float s_var[n_beta];
     float *mse_stdev = &mse[0];
     float *mse_var = &mse[n_beta];
-      
     for(unsigned int j = 0; j < n_beta; ++j){
       float sub = j * (range_beta / n_beta) - range_beta / 2.0f;
-      b_var[j] = b_sum / (N_SAMPLE - sub);
-      float diff_stdev = sqrtf(p_var) - sqrtf(b_var[j]);
-      float diff_var = p_var - b_var[j];
-      //printf("b_var[%u]: %f, error[iter: %u][sub: %f]: %f\n", j, b_var[j], iter, sub, sqrt(diff_var * diff_var));  
+      s_var[j] = s_sum / (N_SAMPLE - sub);
+      float diff_stdev = sqrtf(p_var) - sqrtf(s_var[j]);
+      float diff_var = p_var - s_var[j];
+      //printf("s_var[%u]: %f, error[iter: %u][sub: %f]: %f\n", j, s_var[j], iter, sub, sqrt(diff_var * diff_var));  
       
       /* Sum the errors of each iteration */
       mse_stdev[j] += diff_stdev * diff_stdev;

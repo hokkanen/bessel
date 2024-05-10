@@ -39,7 +39,7 @@ else ifeq ($(OMP),CUDA)
 
 # Use nvc++ instead of nvc because of curand_kernel.h
 CXX = nvc++
-CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80
+CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80 -Minfo=mp
 # Huge performance loss without linker flags
 LDFLAGS += -mp=gpu -gpu=cc80
 FILETYPE = .c

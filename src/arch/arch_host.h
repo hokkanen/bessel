@@ -96,7 +96,7 @@ inline static float arch_random_float(unsigned long long seed, unsigned long lon
   }
   /* Use Box Muller algorithm to get a float from a normal distribution */
   const float two_pi = 2.0f * M_PI;
-  /* Add one to numerator and denominator to prevent 'logf(u1) = 0' from ruining the simulation */
+  /* Add one to numerator and denominator to prevent 'logf(u1) = -nan' from ruining the simulation */
   const float u1 = (float)((unsigned long long)rand() + 1) / (float)((unsigned long long)RAND_MAX + 1);
   const float u2 = (float)((unsigned long long)rand() + 1) / (float)((unsigned long long)RAND_MAX + 1);
   const float factor = stdev * sqrtf(-2.0f * logf(u1));

@@ -122,7 +122,7 @@ namespace arch
         // Copy data from sum to sum_buf
         memcpy_d2d(sum_buf, sum, NReductions * sizeof(T));
         // The actual kernel workgroup size should be a multiple of the block size
-        unsigned kernel_size = ((loop_size + ARCH_BLOCKSIZE - 1) / ARCH_BLOCKSIZE) * ARCH_BLOCKSIZE;
+        const unsigned kernel_size = ((loop_size + ARCH_BLOCKSIZE - 1) / ARCH_BLOCKSIZE) * ARCH_BLOCKSIZE;
         // Create a wrapper that extracts the thread index and checks for loop bounds
         auto lambda_wrapper = [=](const sycl::nd_item<1> nd_item, auto &lsum)
         {

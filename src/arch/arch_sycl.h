@@ -113,6 +113,10 @@ namespace arch
             .wait();
     }
 
+    // The reduction type for SYCL (using 'auto' for this in bessel.cpp fails with CUDA/KOKKOS backends)
+    template<unsigned N>
+    using Reducer = typename sycl::detail::reduction_impl<float, sycl::plus<void>, 1, N, true, float *>::reducer_type&;
+
     /* Parallel reduce driver function for the SYCL reductions */
     template <unsigned NReductions, typename Lambda, typename T>
     inline static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)

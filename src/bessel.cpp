@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     /* Run the loop over iterations */
     arch::parallel_reduce(
         N_ITER, mse,
-        ARCH_LOOP_LAMBDA(const unsigned iter, auto &lmse) {
+        ARCH_LOOP_LAMBDA(const unsigned iter, arch::Reducer<2 * n_beta> lmse) {
           unsigned long long pos = (unsigned long long)iter * (unsigned long long)N_POPU;
           /* Calculate the mean and the squared sum of the population and the sample */
           float p_mean = 0.0f;

@@ -100,6 +100,10 @@ namespace arch
         Kokkos::fence();
     }
 
+    // The reduction type (using 'auto' for this in bessel.cpp fails with CUDA/KOKKOS backends)
+    template<unsigned N>
+    using Reducer = float*;
+
     /* Aux struct to perform reductions into an array with Kokkos */
     template <size_t N>
     struct AuxReducer

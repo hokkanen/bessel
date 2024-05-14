@@ -164,6 +164,10 @@ namespace arch
     HIP_ERR(hipStreamSynchronize(0));
   }
 
+  // The reduction type (using 'auto' for this in bessel.cpp fails with CUDA/KOKKOS backends)
+  template<unsigned N>
+  using Reducer = float*;
+
   /* Parallel reduce driver function for the HIP reductions */
   template <unsigned NReductions, typename Lambda, typename T>
   __forceinline__ static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)

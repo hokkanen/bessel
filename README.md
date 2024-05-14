@@ -97,8 +97,9 @@ srun ./bessel 4
 
 **MAHTI GPU node**
 ```
-GPU parallel (CUDA):     138[ms]
-GPU parallel (Kokkos):   180[ms]
+GPU parallel (CUDA):     127[ms]
+GPU parallel (Kokkos):   187[ms]
+GPU parallel (SYCL):     59[ms]
 GPU parallel (OpenACC):  236[ms]
 GPU parallel (OpenMP):   237[ms]
 CPU parallel (Kokkos):   2494[ms]
@@ -107,8 +108,9 @@ CPU sequential (Kokkos): 287944[ms]
 
 **LUMI GPU node**
 ```
-GPU parallel (CUDA):     308[ms]
-GPU parallel (Kokkos):   306[ms]
+GPU parallel (HIP):      312[ms]
+GPU parallel (Kokkos):   297[ms]
+GPU parallel (SYCL):     136[ms]
 GPU parallel (OpenACC):  No OpenACC compiler support on Lumi
 GPU parallel (OpenMP):   No OpenMP offloading support for hiprand_kernel.h
 CPU parallel (Kokkos):   5419[ms]

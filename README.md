@@ -5,7 +5,9 @@ This example uses the Monte Carlo method to simulate the values of Bessel's corr
 The simulation calculates the root mean squared error for different values of $\beta$. The implementation evaluates the following sum in a single loop by $$\sum_{i=1}^{N}(x_i - \bar{x})^2 = \sum_{i=1}^{N}x_i^2 - N \bar{x}^2.$$ The sample standard deviation is then simply calculated by $$s = \sqrt{s^2} = \sqrt{\frac{1}{N - \beta}\sum_{i=1}^{N}x_i^2 - N \bar{x}^2}$$ after which the root mean squared errors are obtained by comparing these results to the exact population variance and standard deviation.
 
 
-The implementation uses a special construct for the parallel loops in [bessel.cpp](src/bessel.cpp). In the `c` branch (C example), this is based on a preprocessor macro, whereas the `cpp` branch (C++ example) is based on a lambda function, an approach similar to some accelerator frameworks such as SYCL, Kokkos, RAJA, and others. Either option allows conditional compilation of the loops for multiple architectures while keeping the source code clean and readable. An example of the usage of curand and hiprand and Kokkos random number generation libraries inside a GPU kernel are given in [arch_cuda.h](src/arch/arch_cuda.h), [arch_hip.h](src/arch/arch_hip.h) and [arch_kokkos.h](src/arch/arch_kokkos.h) (Kokkos backend is implemented only for the `cpp` branch). Furthermore, in [arch_host.h](src/arch/arch_host.h), sequential host execution is implemented together with optional OpenACC and OpenMP offloading combined with curand random number generator and can be compiled with NVIDIA `nvc++` compiler.
+The implementation uses a special construct for the parallel loops in [bessel.cpp](src/bessel.cpp). In the `c` branch (C example), this is based on a preprocessor macro, whereas the `cpp` branch (C++ example) is based on a lambda function, an approach similar to some accelerator frameworks such as SYCL, Kokkos, RAJA, and others. Either option allows conditional compilation of the loops for multiple architectures while keeping the source code clean and readable. An example of the usage of curand and hiprand, Kokkos and OneMKL random number generation libraries inside a GPU kernel are given in [arch_cuda.h](src/arch/arch_cuda.h), [arch_hip.h](src/arch/arch_hip.h), [arch_kokkos.h](src/arch/arch_kokkos.h) and [arch_sycl.h](src/arch/arch_sycl.h) (Kokkos and SYCL backends are implemented only for the `cpp` branch). Furthermore, in [arch_host.h](src/arch/arch_host.h), sequential host execution is implemented together with optional OpenACC and OpenMP offloading combined with curand random number generator and can be compiled with NVIDIA `nvc++` compiler.
+
+## Compilation
 
 Clone the repo with `--recursive` flag to get Kokkos repo as well:
 
@@ -13,7 +15,7 @@ Clone the repo with `--recursive` flag to get Kokkos repo as well:
 git clone --recursive https://github.com/hokkanen/bessel.git
 ```
 
-The code can be conditionally compiled for either CUDA, HIP, Kokkos or HOST execution with or without MPI. The HOST implementation can also be further offloaded to GPUs by OpenMP. The correct definitions for each accelerator backend options are selected in [arch_api.h](src/arch/arch_api.h) by choosing the respective header file. Some compilation combinations are shown below, but also other combinations are possible.
+The code can be conditionally compiled for either CUDA, HIP, Kokkos, SYCL or HOST execution with or without MPI. The HOST implementation can also be further offloaded to GPUs by OpenMP. The correct definitions for each accelerator backend options are selected in [arch_api.h](src/arch/arch_api.h) by choosing the respective header file. Some compilation combinations are shown below, but also other combinations are possible (see the next section for SYCL).
 
 ```
 // Compile to run sequentially on CPU
@@ -23,7 +25,7 @@ make
 make MPI=OMPI (or MPI=CRAY)
 
 // Compile to run parallel on CPU with KOKKOS (OpenMP)
-make KOKKOS=OMP
+make KOKKOS=HOST
 
 // Compile to run parallel on GPU with OpenMP offloading (NVIDIA GPUs)
 make OMP=CUDA
@@ -48,6 +50,23 @@ Moreover, the `cpp` branch supports [Matplotplusplus](https://alandefreitas.gith
 ```
 // Compile to run parallel on many GPUs with KOKKOS, Cray MPI, and Matplotplusplus (AMD GPUs)
 make KOKKOS=ROCM MPI=CRAY MATPLOT=1
+```
+
+## SYCL backend on `cpp` branch
+Compiling with SYCL backend requires installing a compiler that supports SYCL. The [Makefile](./Makefile) has been configured for [Intel OneAPI](https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2024-1/install-with-command-line.html) `icpx` compiler. If compiling for AMD or NVIDIA GPUs, Codeplay extensions are needed as well ([CUDA](https://developer.codeplay.com/products/oneapi/nvidia/2024.1.0/guides/get-started-guide-nvidia)/[ROCM](https://developer.codeplay.com/products/oneapi/amd/2024.1.0/guides/get-started-guide-amd)). After installation, load the OneAPI compiler environment by 
+```
+. /path/oneapi/setvars.sh --include-intel-llvm
+```
+If everything went successfully, compiling with SYCL backend should now work by:
+```
+// Compile to run parallel on CPU with SYCL
+make SYCL=HOST
+
+// Compile to run parallel on GPU with SYCL (NVIDIA GPUs)
+make SYCL=CUDA
+
+// Compile to run parallel on GPU with SYCL (AMD GPUs)
+make SYCL=ROCM
 ```
 
 ## Umpire install for `c` branch

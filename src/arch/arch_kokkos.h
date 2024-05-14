@@ -126,7 +126,7 @@ namespace arch
         // Create a wrapper lambda that takes in AuxReducer
         auto lambda_wrapper = KOKKOS_LAMBDA(const unsigned iter, AuxReducer<NReductions> &laux_sum)
         {
-            loop_body(iter, &(laux_sum.values[0]));
+            loop_body(iter, laux_sum.values);
         };
 
         // Run the Kokkos reduction

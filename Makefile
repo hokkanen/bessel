@@ -83,6 +83,15 @@ CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80 -Minfo=mp
 LDFLAGS += -mp=gpu -gpu=cc80
 EXE = bessel
 
+else ifeq ($(SYCL),CUDA)
+
+CXX = icpx
+CXXDEFS = -DHAVE_SYCL
+CXXFLAGS = -g -O3 -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --cuda-gpu-arch=sm_80
+LDFLAGS += -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --cuda-gpu-arch=sm_80
+LIBS += -lsycl
+EXE = bessel
+
 else ifeq ($(SYCL),HOST)
 
 CXX = icpx

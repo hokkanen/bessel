@@ -15,7 +15,7 @@
 #endif
 
 /* Set problem dimensions */
-#define N_ITER 10000
+#define N_ITER 1000000
 #define N_POPU 10000
 #define N_SAMPLE 50
 

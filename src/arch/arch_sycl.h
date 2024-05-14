@@ -9,6 +9,9 @@
 /* Define architecture-specific macros */
 #define ARCH_LOOP_LAMBDA [=]
 
+/* Set SYCL workgroup size */
+#define ARCH_BLOCKSIZE 256
+
 /* Namespace for architecture-specific functions */
 namespace arch
 {
@@ -24,7 +27,7 @@ namespace arch
     /* Device backend finalization */
     inline static void finalize(int rank)
     {
-        printf("Rank %d, Sycl finalized.\n", rank);
+        printf("Rank %d, SYCL finalized.\n", rank);
     }
 
     /* Device function for memory allocation */
@@ -91,14 +94,26 @@ namespace arch
         return (T)z0;
     }
 
-    /* Parallel for driver function for the Sycl loops */
+    /* Parallel for driver function for the SYCL loops */
     template <typename Lambda>
     inline static void parallel_for(unsigned loop_size, Lambda loop_body)
     {
-        q.parallel_for(sycl::range<1>(loop_size), loop_body).wait();
+        // The actual kernel workgroup size should be a multiple of the block size
+        unsigned kernel_size = ((loop_size + ARCH_BLOCKSIZE - 1) / ARCH_BLOCKSIZE) * ARCH_BLOCKSIZE;
+        // Create a wrapper that extracts the thread index and checks for loop bounds
+        auto lambda_wrapper = [=](const sycl::nd_item<1> nd_item)
+        {
+            unsigned index = nd_item.get_global_id(0);
+            if (index < loop_size)
+                loop_body(index);
+        };
+        // Evaluate the parallel for loop
+        q.parallel_for(sycl::nd_range<1>{sycl::range<1>(kernel_size), sycl::range<1>(ARCH_BLOCKSIZE)},
+                       lambda_wrapper)
+            .wait();
     }
 
-    /* Parallel reduce driver function for the Sycl reductions */
+    /* Parallel reduce driver function for the SYCL reductions */
     template <unsigned NReductions, typename Lambda, typename T>
     inline static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
     {
@@ -106,9 +121,19 @@ namespace arch
         T *sum_buf = (T *)arch::allocate(NReductions * sizeof(T));
         // Copy data from sum to sum_buf
         memcpy_d2d(sum_buf, sum, NReductions * sizeof(T));
-        q.parallel_for(sycl::range<1>(loop_size),
+        // The actual kernel workgroup size should be a multiple of the block size
+        unsigned kernel_size = ((loop_size + ARCH_BLOCKSIZE - 1) / ARCH_BLOCKSIZE) * ARCH_BLOCKSIZE;
+        // Create a wrapper that extracts the thread index and checks for loop bounds
+        auto lambda_wrapper = [=](const sycl::nd_item<1> nd_item, auto &lsum)
+        {
+            unsigned index = nd_item.get_global_id(0);
+            if (index < loop_size)
+                loop_body(index, lsum);
+        };
+        // Evaluate the parallel reduction loop
+        q.parallel_for(sycl::nd_range<1>{sycl::range<1>(kernel_size), sycl::range<1>(ARCH_BLOCKSIZE)},
                        sycl::reduction(sycl::span<T, NReductions>(sum_buf, NReductions), T(0), std::plus<>()),
-                       loop_body)
+                       lambda_wrapper)
             .wait();
         // Copy data back from sum_buf to sum
         memcpy_d2d(sum, sum_buf, NReductions * sizeof(T));

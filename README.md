@@ -25,7 +25,7 @@ make
 make MPI=OMPI (or MPI=CRAY)
 
 // Compile to run parallel on CPU with KOKKOS (OpenMP)
-make KOKKOS=OMP
+make KOKKOS=HOST
 
 // Compile to run parallel on GPU with OpenMP offloading (NVIDIA GPUs)
 make OMP=CUDA
@@ -53,7 +53,7 @@ make KOKKOS=ROCM MPI=CRAY MATPLOT=1
 ```
 
 ## SYCL backend on `cpp` branch
-Compiling with SYCL backend requires installing a compiler that supports SYCL. The [Makefile](./Makefile) has been configured for [Intel OneAPI](https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2024-1/install-with-command-line.html) `icpx` compiler. If compiling for AMD or NVIDIA GPUS, Codeplay extensions are needed as well ([CUDA](https://developer.codeplay.com/products/oneapi/nvidia/2024.1.0/guides/get-started-guide-nvidia)/[ROCM](https://developer.codeplay.com/products/oneapi/amd/2024.1.0/guides/get-started-guide-amd)). After installation, load the OneAPI compiler environment by 
+Compiling with SYCL backend requires installing a compiler that supports SYCL. The [Makefile](./Makefile) has been configured for [Intel OneAPI](https://www.intel.com/content/www/us/en/docs/oneapi/installation-guide-linux/2024-1/install-with-command-line.html) `icpx` compiler. If compiling for AMD or NVIDIA GPUs, Codeplay extensions are needed as well ([CUDA](https://developer.codeplay.com/products/oneapi/nvidia/2024.1.0/guides/get-started-guide-nvidia)/[ROCM](https://developer.codeplay.com/products/oneapi/amd/2024.1.0/guides/get-started-guide-amd)). After installation, load the OneAPI compiler environment by 
 ```
 . /path/oneapi/setvars.sh --include-intel-llvm
 ```

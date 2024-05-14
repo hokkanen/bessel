@@ -62,7 +62,7 @@ CLEAN = kokkos-clean
 CXXDEFS = -DHAVE_KOKKOS
 EXE = bessel
 
-else ifeq ($(KOKKOS),OMP)
+else ifeq ($(KOKKOS),HOST)
 
 # Inputs for Makefile.kokkos
 KOKKOS_PATH = $(shell pwd)/kokkos
@@ -89,6 +89,15 @@ CXX = icpx
 CXXDEFS = -DHAVE_SYCL
 CXXFLAGS = -g -O3 -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --cuda-gpu-arch=sm_80
 LDFLAGS += -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --cuda-gpu-arch=sm_80
+LIBS += -lsycl
+EXE = bessel
+
+else ifeq ($(SYCL),ROCM)
+
+CXX = icpx
+CXXDEFS = -DHAVE_SYCL
+CXXFLAGS = -g -O3 -fsycl -fsycl-targets=amdgcn-amd-amdhsa -Xsycl-target-backend=amdgcn-amd-amdhsa --offload-arch=gfx90a
+LDFLAGS += -fsycl -fsycl-targets=amdgcn-amd-amdhsa -Xsycl-target-backend=amdgcn-amd-amdhsa --offload-arch=gfx90a
 LIBS += -lsycl
 EXE = bessel
 

@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     /* Run the loop over iterations */
     arch::parallel_reduce(
         N_ITER, mse,
-        ARCH_LOOP_LAMBDA(const unsigned iter, float *lmse) {
+        ARCH_LOOP_LAMBDA(const unsigned iter, auto &lmse) {
           unsigned long long pos = (unsigned long long)iter * (unsigned long long)N_POPU;
           /* Calculate the mean and the squared sum of the population and the sample */
           float p_mean = 0.0f;
@@ -74,8 +74,8 @@ int main(int argc, char *argv[])
                 s_mean += rnd_val;
                 s_squared += rnd_val * rnd_val;
               }
-              if (iter < 1 && i < 3)
-                printf("Rank %u, iter: %u ,rnd_val[%u]: %.5f \n", my_rank, iter, i, rnd_val);
+              // if (iter < 1 && i < 3)
+                // printf("Rank %u, iter: %u ,rnd_val[%u]: %.5f \n", my_rank, iter, i, rnd_val);
             }
             arch::random_state_free(seed_state, state);
           }
@@ -89,8 +89,6 @@ int main(int argc, char *argv[])
 
           /* Calculate the mean squared error in the sample standard deviation and variance for different beta */
           float s_var[n_beta];
-          float *mse_stdev = &lmse[0];
-          float *mse_var = &lmse[n_beta];
           for (unsigned j = 0; j < n_beta; ++j)
           {
             float sub = j * (range_beta / n_beta) - range_beta / 2.0f;
@@ -100,8 +98,8 @@ int main(int argc, char *argv[])
             // printf("s_var[%u]: %f, error[iter: %u][sub: %f]: %f\n", j, s_var[j], iter, sub, sqrt(diff_var * diff_var));
 
             /* Sum the errors of each iteration */
-            mse_stdev[j] += diff_stdev * diff_stdev;
-            mse_var[j] += diff_var * diff_var;
+            lmse[j] += (diff_stdev * diff_stdev);
+            lmse[n_beta + j] += (diff_var * diff_var);
           }
         });
 

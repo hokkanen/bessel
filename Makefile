@@ -83,6 +83,15 @@ CXXFLAGS = -g -O3 -mp=gpu -gpu=cc80 -Minfo=mp
 LDFLAGS += -mp=gpu -gpu=cc80
 EXE = bessel
 
+else ifeq ($(SYCL),HOST)
+
+CXX = icpx
+CXXDEFS = -DHAVE_SYCL
+CXXFLAGS = -g -O3 -fsycl
+LDFLAGS += -fsycl
+LIBS += -lsycl
+EXE = bessel
+
 else
 
 CXX = g++

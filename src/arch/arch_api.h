@@ -12,6 +12,8 @@
 #include "arch_hip.h"
 #elif defined(HAVE_KOKKOS)
 #include "arch_kokkos.h"
+#elif defined(HAVE_SYCL)
+#include "arch_sycl.h"
 #else
 #include "arch_host.h"
 #endif

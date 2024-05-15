@@ -124,9 +124,9 @@ namespace arch
     inline static void parallel_reduce(Q &q, const unsigned loop_size, T (&sum)[NReductions], const Lambda loop_body)
     {
         // Allocate memory for the reduction data
-        T *sum_buf = (T *)arch::allocate(q, NReductions * sizeof(T));
+        T *sum_buf = sycl::malloc_device<T>(NReductions, q);
         // Copy data from sum to sum_buf
-        memcpy_d2d(q, sum_buf, sum, NReductions * sizeof(T));
+        q.memcpy(sum_buf, sum, NReductions * sizeof(T)).wait();
         // The actual kernel workgroup size should be a multiple of the block size
         const unsigned kernel_size = ((loop_size + ARCH_BLOCKSIZE - 1) / ARCH_BLOCKSIZE) * ARCH_BLOCKSIZE;
         // Create a wrapper that extracts the thread index and checks for loop bounds
@@ -142,9 +142,9 @@ namespace arch
                        lambda_wrapper)
             .wait();
         // Copy data back from sum_buf to sum
-        memcpy_d2d(q, sum, sum_buf, NReductions * sizeof(T));
+        q.memcpy(sum, sum_buf, NReductions * sizeof(T)).wait();
         // Free the reduction data allocation
-        arch::free(q, sum_buf);
+        sycl::free(sum_buf, q);
     }
 }
 

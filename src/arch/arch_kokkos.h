@@ -22,7 +22,7 @@ namespace arch
 
     /* Device backend finalization */
     template <typename Q>
-    inline static void finalize(Q q, int rank)
+    inline static void finalize(Q &q, int rank)
     {
         Kokkos::finalize();
         printf("Rank %d, Kokkos finalized.\n", rank);
@@ -30,21 +30,21 @@ namespace arch
 
     /* Device function for memory allocation */
     template <typename Q>
-    inline static void *allocate(Q q, size_t bytes)
+    inline static void *allocate(Q &q, size_t bytes)
     {
         return Kokkos::kokkos_malloc<Kokkos::SharedSpace>(bytes);
     }
 
     /* Device function for memory deallocation */
     template <typename Q>
-    inline static void free(Q q, void *ptr)
+    inline static void free(Q &q, void *ptr)
     {
         Kokkos::kokkos_free<Kokkos::SharedSpace>(ptr);
     }
 
     /* Device-to-device memory copy */
     template <typename Q>
-    inline static void memcpy_d2d(Q q, void *dst, void *src, size_t bytes)
+    inline static void memcpy_d2d(Q &q, void *dst, void *src, size_t bytes)
     {
         Kokkos::View<char *> dst_view((char *)dst, bytes);
         Kokkos::View<char *> src_view((char *)src, bytes);
@@ -60,7 +60,7 @@ namespace arch
 
     /* A function to make sure the seed is of right type (returns rng pool for Kokkos) */
     template <typename Q, typename T>
-    inline static auto random_state_seed(Q q, T &seed)
+    inline static auto random_state_seed(Q &q, T &seed)
     {
         Kokkos::Random_XorShift64_Pool<> rng_pool(seed);
         return rng_pool;
@@ -99,7 +99,7 @@ namespace arch
 
     /* Parallel for driver function for the Kokkos loops */
     template <typename Q, typename Lambda>
-    inline static void parallel_for(Q q, unsigned loop_size, Lambda loop_body)
+    inline static void parallel_for(Q &q, unsigned loop_size, Lambda loop_body)
     {
         Kokkos::parallel_for(loop_size, loop_body);
         Kokkos::fence();
@@ -125,7 +125,7 @@ namespace arch
 
     /* Parallel reduce driver function for the Kokkos reductions */
     template <unsigned NReductions, typename Q, typename Lambda, typename T>
-    inline static void parallel_reduce(Q q, const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
+    inline static void parallel_reduce(Q &q, const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
     {
         // Copy initial values to the AuxReducer object
         AuxReducer<NReductions> aux_sum;

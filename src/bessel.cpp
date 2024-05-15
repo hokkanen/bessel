@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
                 s_squared += rnd_val * rnd_val;
               }
               // if (iter < 1 && i < 3)
-                // printf("Rank %u, iter: %u ,rnd_val[%u]: %.5f \n", my_rank, iter, i, rnd_val);
+              // printf("Rank %u, iter: %u ,rnd_val[%u]: %.5f \n", my_rank, iter, i, rnd_val);
             }
             arch::random_state_free(seed_state, state);
           }

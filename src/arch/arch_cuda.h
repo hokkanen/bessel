@@ -38,14 +38,14 @@ namespace arch
 
   /* Device backend finalization */
   template <typename Q>
-  __forceinline__ static void finalize(Q q, int rank)
+  __forceinline__ static void finalize(Q &q, int rank)
   {
     printf("Rank %d, CUDA finalized.\n", rank);
   }
 
   /* Device function for memory allocation */
   template <typename Q>
-  __forceinline__ static void *allocate(Q q, size_t bytes)
+  __forceinline__ static void *allocate(Q &q, size_t bytes)
   {
     void *ptr;
     CUDA_ERR(cudaMallocManaged(&ptr, bytes));
@@ -54,14 +54,14 @@ namespace arch
 
   /* Device function for memory deallocation */
   template <typename Q>
-  __forceinline__ static void free(Q q, void *ptr)
+  __forceinline__ static void free(Q &q, void *ptr)
   {
     CUDA_ERR(cudaFree(ptr));
   }
 
   /* Device-to-device memory copy */
   template <typename Q>
-  __forceinline__ static void memcpy_d2d(Q q, void *dst, void *src, size_t bytes)
+  __forceinline__ static void memcpy_d2d(Q &q, void *dst, void *src, size_t bytes)
   {
     CUDA_ERR(cudaMemcpy(dst, src, bytes, cudaMemcpyDeviceToDevice));
   }
@@ -80,7 +80,7 @@ namespace arch
 
   /* A function to make sure the seed is of right type */
   template <typename Q, typename T>
-  __forceinline__ static unsigned long long random_state_seed(Q q, T &seed)
+  __forceinline__ static unsigned long long random_state_seed(Q &q, T &seed)
   {
     return (unsigned long long)seed;
   }
@@ -161,7 +161,7 @@ namespace arch
 
   /* Parallel for driver function for the CUDA loops */
   template <typename Q, typename Lambda>
-  __forceinline__ static void parallel_for(Q q, unsigned loop_size, Lambda loop_body)
+  __forceinline__ static void parallel_for(Q &q, unsigned loop_size, Lambda loop_body)
   {
     const unsigned blocksize = ARCH_BLOCKSIZE;
     const unsigned gridsize = (loop_size - 1 + blocksize) / blocksize;
@@ -170,12 +170,12 @@ namespace arch
   }
 
   // The reduction type (using 'auto' for this in bessel.cpp fails with CUDA/KOKKOS backends)
-  template<unsigned N>
-  using Reducer = float*;
+  template <unsigned N>
+  using Reducer = float *;
 
   /* Parallel reduce driver function for the CUDA reductions */
   template <unsigned NReductions, typename Q, typename Lambda, typename T>
-  __forceinline__ static void parallel_reduce(Q q, const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
+  __forceinline__ static void parallel_reduce(Q &q, const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
   {
 
     /* Set the kernel dimensions */

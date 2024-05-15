@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
   /* Initialize processes */
   comms::init_procs(&argc, &argv);
   /* Initialize devices */
-  arch::init(comms::get_node_rank());
+  auto q = arch::init(comms::get_node_rank());
   const unsigned my_rank = comms::get_global_rank();
   {
     /* Set spacing and range for beta */
@@ -50,11 +50,11 @@ int main(int argc, char *argv[])
     unsigned long long master_seed = dist(mt);
 
     /* Make sure the seed type is compatible with the chosen backend */
-    auto seed_state = arch::random_state_seed(master_seed);
+    auto seed_state = arch::random_state_seed(q, master_seed);
 
     /* Run the loop over iterations */
     arch::parallel_reduce(
-        N_ITER, mse,
+        q, N_ITER, mse,
         ARCH_LOOP_LAMBDA(const unsigned iter, arch::Reducer<2 * n_beta> lmse) {
           unsigned long long pos = (unsigned long long)iter * (unsigned long long)N_POPU;
           /* Calculate the mean and the squared sum of the population and the sample */
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
     }
   }
   /* Finalize devices */
-  arch::finalize(my_rank);
+  arch::finalize(q, my_rank);
   /* Finalize processes */
   comms::finalize_procs();
 

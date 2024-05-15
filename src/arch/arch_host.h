@@ -24,13 +24,14 @@
 namespace arch
 {
   /* Host backend initialization */
-  inline static void init(int node_rank)
+  inline static int init(int node_rank)
   {
-    // Nothing needs to be done here
+    return 0;
   }
 
   /* Host backend finalization */
-  inline static void finalize(int rank)
+  template <typename Q>
+  inline static void finalize(Q q, int rank)
   {
 #ifdef _OPENACC
     printf("Rank %d, OpenACC (offload) finalized.\n", rank);
@@ -42,19 +43,22 @@ namespace arch
   }
 
   /* Host function for memory allocation */
-  inline static void *allocate(size_t bytes)
+  template <typename Q>
+  inline static void *allocate(Q q, size_t bytes)
   {
     return malloc(bytes);
   }
 
   /* Host function for memory deallocation */
-  inline static void free(void *ptr)
+  template <typename Q>
+  inline static void free(Q q, void *ptr)
   {
     ::free(ptr);
   }
 
   /* Host-to-host memory copy */
-  inline static void memcpy_d2d(void *dst, void *src, size_t bytes)
+  template <typename Q>
+  inline static void memcpy_d2d(Q q, void *dst, void *src, size_t bytes)
   {
 #ifdef _OPENACC
     int dev = acc_get_device_num(acc_device_nvidia);
@@ -80,8 +84,8 @@ namespace arch
 #pragma omp end declare target
 
   /* A function to make sure the seed is of right type */
-  template <typename T>
-  static unsigned long long random_state_seed(T &seed)
+  template <typename Q, typename T>
+  static unsigned long long random_state_seed(Q q, T &seed)
   {
     return (unsigned long long)seed;
   }
@@ -147,8 +151,8 @@ namespace arch
 #pragma omp end declare target
 
   /* Parallel for driver function for the host loops */
-  template <typename Lambda>
-  inline static void parallel_for(unsigned loop_size, Lambda loop_body)
+  template <typename Q, typename Lambda>
+  inline static void parallel_for(Q q, unsigned loop_size, Lambda loop_body)
   {
     /* OpenACC requires specifying all levels (gang, worker and vector) here to prevent inner loop parallelization */
 #pragma acc parallel loop independent gang worker vector
@@ -165,8 +169,8 @@ namespace arch
   using Reducer = float*;
 
   /* Parallel reduce driver function for the host reductions */
-  template <unsigned NReductions, typename Lambda, typename T>
-  inline static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
+  template <unsigned NReductions, typename Q, typename Lambda, typename T>
+  inline static void parallel_reduce(Q q, const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
   {
     /* Introduce aux pointer to avoid nvc++ (24.3-0) omp offload compile crash */
     T *aux_sum = &(sum[0]);

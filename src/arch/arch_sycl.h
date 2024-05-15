@@ -15,35 +15,37 @@
 /* Namespace for architecture-specific functions */
 namespace arch
 {
-    /* Global static queue (bad if multiple comp units) */
-    static sycl::queue q;
-
     /* Device backend initialization */
-    inline static void init(int node_rank)
+    inline static sycl::queue init(int node_rank)
     {
-        // Nothing needs to be done here
+        sycl::queue q;
+        return q;
     }
 
     /* Device backend finalization */
-    inline static void finalize(int rank)
+    template <typename Q>
+    inline static void finalize(Q &q, int rank)
     {
         printf("Rank %d, SYCL finalized.\n", rank);
     }
 
     /* Device function for memory allocation */
-    inline static void *allocate(size_t bytes)
+    template <typename Q>
+    inline static void *allocate(Q &q, size_t bytes)
     {
         return sycl::malloc_shared<char>(bytes, q);
     }
 
     /* Device function for memory deallocation */
-    inline static void free(void *ptr)
+    template <typename Q>
+    inline static void free(Q &q, void *ptr)
     {
         sycl::free(ptr, q);
     }
 
     /* Device-to-device memory copy */
-    inline static void memcpy_d2d(void *dst, void *src, size_t bytes)
+    template <typename Q>
+    inline static void memcpy_d2d(Q &q, void *dst, void *src, size_t bytes)
     {
         q.memcpy(dst, src, bytes).wait();
     }
@@ -59,8 +61,8 @@ namespace arch
     }
 
     /* A function to make sure the seed is of right type */
-    template <typename T>
-    inline static auto random_state_seed(T &seed)
+    template <typename Q, typename T>
+    inline static auto random_state_seed(Q &q, T &seed)
     {
         return (unsigned long long)seed;
     }
@@ -95,8 +97,8 @@ namespace arch
     }
 
     /* Parallel for driver function for the SYCL loops */
-    template <typename Lambda>
-    inline static void parallel_for(unsigned loop_size, Lambda loop_body)
+    template <typename Q, typename Lambda>
+    inline static void parallel_for(Q &q, unsigned loop_size, const Lambda loop_body)
     {
         // The actual kernel workgroup size should be a multiple of the block size
         unsigned kernel_size = ((loop_size + ARCH_BLOCKSIZE - 1) / ARCH_BLOCKSIZE) * ARCH_BLOCKSIZE;
@@ -114,17 +116,17 @@ namespace arch
     }
 
     // The reduction type for SYCL (using 'auto' for this in bessel.cpp fails with CUDA/KOKKOS backends)
-    template<unsigned N>
-    using Reducer = typename sycl::detail::reduction_impl<float, sycl::plus<void>, 1, N, true, float *>::reducer_type&;
+    template <unsigned N>
+    using Reducer = typename sycl::detail::reduction_impl<float, sycl::plus<void>, 1, N, true, float *>::reducer_type &;
 
     /* Parallel reduce driver function for the SYCL reductions */
-    template <unsigned NReductions, typename Lambda, typename T>
-    inline static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
+    template <unsigned NReductions, typename Q, typename Lambda, typename T>
+    inline static void parallel_reduce(Q &q, const unsigned loop_size, T (&sum)[NReductions], const Lambda loop_body)
     {
         // Allocate memory for the reduction data
-        T *sum_buf = (T *)arch::allocate(NReductions * sizeof(T));
+        T *sum_buf = (T *)arch::allocate(q, NReductions * sizeof(T));
         // Copy data from sum to sum_buf
-        memcpy_d2d(sum_buf, sum, NReductions * sizeof(T));
+        memcpy_d2d(q, sum_buf, sum, NReductions * sizeof(T));
         // The actual kernel workgroup size should be a multiple of the block size
         const unsigned kernel_size = ((loop_size + ARCH_BLOCKSIZE - 1) / ARCH_BLOCKSIZE) * ARCH_BLOCKSIZE;
         // Create a wrapper that extracts the thread index and checks for loop bounds
@@ -140,9 +142,9 @@ namespace arch
                        lambda_wrapper)
             .wait();
         // Copy data back from sum_buf to sum
-        memcpy_d2d(sum, sum_buf, NReductions * sizeof(T));
+        memcpy_d2d(q, sum, sum_buf, NReductions * sizeof(T));
         // Free the reduction data allocation
-        arch::free(sum_buf);
+        arch::free(q, sum_buf);
     }
 }
 

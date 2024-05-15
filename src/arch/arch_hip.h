@@ -7,6 +7,9 @@
 #include <hipcub/hipcub.hpp>
 #include <hiprand_kernel.h>
 
+/* Define architecture-specific macros */
+#define ARCH_LOOP_LAMBDA [=] __host__ __device__
+
 /* Set HIP blocksize */
 #define ARCH_BLOCKSIZE 256
 
@@ -21,28 +24,28 @@ inline static void hip_error(hipError_t err, const char *file, int line)
   }
 }
 
-/* Define architecture-specific macros */
-#define ARCH_LOOP_LAMBDA [=] __host__ __device__
-
 /* Namespace for architecture-specific functions */
 namespace arch
 {
   /* Device backend initialization */
-  __forceinline__ static void init(int node_rank)
+  __forceinline__ static int init(int node_rank)
   {
     int num_devices = 0;
     HIP_ERR(hipGetDeviceCount(&num_devices));
     HIP_ERR(hipSetDevice(node_rank % num_devices));
+    return 0;
   }
 
   /* Device backend finalization */
-  __forceinline__ static void finalize(int rank)
+  template <typename Q>
+  __forceinline__ static void finalize(Q q, int rank)
   {
     printf("Rank %d, HIP finalized.\n", rank);
   }
 
   /* Device function for memory allocation */
-  __forceinline__ static void *allocate(size_t bytes)
+  template <typename Q>
+  __forceinline__ static void *allocate(Q q, size_t bytes)
   {
     void *ptr;
     HIP_ERR(hipMallocManaged(&ptr, bytes));
@@ -50,13 +53,15 @@ namespace arch
   }
 
   /* Device function for memory deallocation */
-  __forceinline__ static void free(void *ptr)
+  template <typename Q>
+  __forceinline__ static void free(Q q, void *ptr)
   {
     HIP_ERR(hipFree(ptr));
   }
 
   /* Device-to-device memory copy */
-  __forceinline__ static void memcpy_d2d(void *dst, void *src, size_t bytes)
+  template <typename Q>
+  __forceinline__ static void memcpy_d2d(Q q, void *dst, void *src, size_t bytes)
   {
     HIP_ERR(hipMemcpy(dst, src, bytes, hipMemcpyDeviceToDevice));
   }
@@ -74,8 +79,8 @@ namespace arch
   }
 
   /* A function to make sure the seed is of right type */
-  template <typename T>
-  __forceinline__ static unsigned long long random_state_seed(T &seed)
+  template <typename Q, typename T>
+  __forceinline__ static unsigned long long random_state_seed(Q q, T &seed)
   {
     return (unsigned long long)seed;
   }
@@ -155,8 +160,8 @@ namespace arch
   }
 
   /* Parallel for driver function for the HIP loops */
-  template <typename Lambda>
-  __forceinline__ static void parallel_for(unsigned loop_size, Lambda loop_body)
+  template <typename Q, typename Lambda>
+  __forceinline__ static void parallel_for(Q q, unsigned loop_size, Lambda loop_body)
   {
     const unsigned blocksize = ARCH_BLOCKSIZE;
     const unsigned gridsize = (loop_size - 1 + blocksize) / blocksize;
@@ -169,8 +174,8 @@ namespace arch
   using Reducer = float*;
 
   /* Parallel reduce driver function for the HIP reductions */
-  template <unsigned NReductions, typename Lambda, typename T>
-  __forceinline__ static void parallel_reduce(const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
+  template <unsigned NReductions, typename Q, typename Lambda, typename T>
+  __forceinline__ static void parallel_reduce(Q q, const unsigned loop_size, T (&sum)[NReductions], Lambda loop_body)
   {
 
     /* Set the kernel dimensions */
